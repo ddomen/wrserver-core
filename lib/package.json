@@ -1,9 +1,9 @@
 {
   "name": "@wrserver/core",
-  "version": "1.0.4",
+  "version": "1.1.0",
   "description": "websocket rest server - core module",
-  "main": "lib/index.js",
-  "types": "lib/index.d.ts",
+  "main": "index.js",
+  "types": "index.d.ts",
   "scripts": { "build": "tsc" },
   "keywords": [ "websocket", "server", "rest", "modular", "controller" ],
   "author": "Daniele Domenichelli <daniele.domenichelli.5@gmail.com>",

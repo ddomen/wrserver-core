@@ -9,6 +9,7 @@
 ### Installing
 Install this library is easy by cloning the repo.
 You can install trhought npm too:
+
 Local installation
 ```
 npm install @wrserver/core
