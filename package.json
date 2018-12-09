@@ -9,13 +9,13 @@
   "author": "Daniele Domenichelli <daniele.domenichelli.5@gmail.com>",
   "license": "MIT",
   "bugs":{
-    "url": "https://github.com/ddomen/wrs/issues"
+    "url": "https://github.com/ddomen/wrserver-core/issues"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ddomen/wrs.git"
+    "url": "https://github.com/ddomen/wrserver-core.git"
   },
-  "homepage": "https://github.com/ddomen/wrs/tree/master/core#readme",
+  "homepage": "https://github.com/ddomen/wrserver-core",
   "publishConfig": {
     "access": "public"
   },
