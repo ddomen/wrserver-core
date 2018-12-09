@@ -1,5 +1,6 @@
 import { Instance, Class } from '../wrserver';
 import { Decorator } from "./decorator";
+/** Decorator for methods | class{ @Dec()method(){} } */
 export declare type MethodDecoration = (instance: Instance<any> | Class, key: string | symbol, descriptor: PropertyDescriptor) => void | PropertyDescriptor;
 export declare class MethodDecorator extends Decorator {
     function(name: string): MethodDecoration;

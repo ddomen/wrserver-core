@@ -7,7 +7,7 @@
     "declarationMap": false,
     "sourceMap": false,
     "outDir": "./lib",
-    "removeComments": true,
+    "removeComments": false,
     "strict": true,
     "moduleResolution": "node",
     "esModuleInterop": true,

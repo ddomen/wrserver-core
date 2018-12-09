@@ -1,5 +1,6 @@
 /// <reference types="node" />
 import { Console } from 'console';
+/** Usefull console logger with file output */
 export declare class WRSConsole extends Console {
     protected grade: string;
     protected directory: string;
@@ -15,7 +16,9 @@ export declare class WRSConsole extends Console {
     protected saveLog(level: number, mode: string, ...args: any[]): this;
     protected stackTrace(): string;
     protected stamp(stamper: keyof Console, mode: string, level?: number, ...args: any[]): this;
+    /** Set the level of the output of the console. Greater is, lesser will be on the console (does not influence file output) */
     level(lv?: number): this | number;
+    /** Stringify a circular object in Json pattern */
     stringify(obj: any): string;
     log(...args: any[]): this;
     info(...args: any[]): this;

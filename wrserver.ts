@@ -4,7 +4,7 @@ import * as BODYPARSER from 'body-parser';
 import * as HTTP from 'http';
 import * as PATH from 'path';
 
-import { Connection, Emitter, Console } from './component';
+import { Connection, Emitter, Console, EventModel } from './component';
 import { Service } from './service';
 import { Module } from './module';
 import { Codes } from './component';
@@ -67,7 +67,7 @@ export class WRServer {
             this.console.service('all services initialized');
             this.initHttp().initWS().start();
         })
-        this.events.on('server.broadcast', (data: Event.Server.Broadcast) => { this.broadcast(data.class, data.data, data.filter); });
+        this.events.on('server.broadcast', (event: EventModel<Event.Server.Broadcast>) => { this.broadcast(event.data.class, event.data.data, event.data.filter); });
 
         this.wsprotocol = this.wsprotocol.toLowerCase();
     }

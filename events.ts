@@ -1,7 +1,6 @@
 /** Event for Emitter Request handling */
 export namespace Event{
-    /** Event for Emitter Request handling - Generic Typed Event */
-    export interface Event { type: string }
+    export interface Event {}
     /** Event for Emitter Request handling - Generic Unknown Event */
     export interface Any extends Event { [key: string]: any }
 
@@ -37,7 +36,7 @@ export namespace Event{
     }
 
     /** Event from Emitter request handling - Event emitted from Mail Service */
-    export interface Email { to: string | string[], subject: string, text: string, html?: boolean, from?: string, isFile?: boolean }
-    export interface IncompleteEmail { to?: string | string[], subject: string, text: string, html?: boolean, from?: string, isFile?: boolean }
+    export interface Email extends Event { to: string | string[], subject: string, text: string, html?: boolean, from?: string, isFile?: boolean }
+    export interface IncompleteEmail extends Event { to?: string | string[], subject: string, text: string, html?: boolean, from?: string, isFile?: boolean }
 }
 
