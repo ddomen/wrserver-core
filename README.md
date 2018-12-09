@@ -6,9 +6,6 @@
 
 [@wrserver](https://github.com/ddomen/wrserver) core module that define the basic concepts of the WRS.
 
-**Mathools library**
-
-Some very usefulls math tools
 ### Installing
 Install this library is easy by cloning the repo.
 You can install trhought npm too:
