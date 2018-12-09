@@ -1,6 +1,6 @@
 {
   "name": "@wrserver/core",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "websocket rest server - core module",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
@@ -13,9 +13,9 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ddomen/wrserver-core.git"
+    "url": "git+https://github.com/ddomen/wrserver-core.git"
   },
-  "homepage": "https://github.com/ddomen/wrserver-core",
+  "homepage": "https://github.com/ddomen/wrserver-core#readme",
   "publishConfig": {
     "access": "public"
   },
