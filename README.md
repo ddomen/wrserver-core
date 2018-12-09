@@ -144,6 +144,34 @@ export class MyService extends Service {
 }
 ```
 
+## Usage
+### TS
+```ts
+import { WRServer } from '@wrserver/core';
+
+let options = {
+    path: <path>,
+    port: <port>,
+    modules: [ ... Modules ... ],
+    root: <static root>
+}
+
+let wrserver = new WRServer(options.path, options.port, options.modules).withRoot(options.root);
+```
+
+###JS
+```js
+const { WRServer } = require('@wrserver/core');
+let options = {
+    path: <path>,
+    port: <port>,
+    modules: [ ... Modules ... ],
+    root: <static root>
+};
+
+let wrserver = new WRServer(options.path, options.port, options.modules).withRoot(options.root);
+```
+
 ## Contacts
 If you like the project feel free to contact me on my [![Email](https://img.shields.io/badge/Contact-email-00897b.svg)](mailto:daniele.domenichelli.5+ddomen@gmail.com).
 
