@@ -1,6 +1,6 @@
 {
   "name": "@wrserver/core",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "websocket rest server - core module",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
