@@ -47,8 +47,10 @@ export declare abstract class ModelBase {
     static Model(model: any, def?: (() => any) | any, name?: string): ModelFormat;
     /** ID Format shorthand, generates a static ID member with automatic increment [See ModelBase.Field] */
     static ID(Model: any): any;
+    /** Check if a model can be validated */
+    protected static checkValidity<T extends ModelBase>(model: T, ...args: any[]): boolean;
     /** Get a Model by its name (exclude model from the name) */
-    static getByName(name: string): Constructor;
+    static getByName<T extends ModelBase = any>(name: string): T;
     /** Add a Model to the static collection */
     static addModel(model: Constructor): typeof ModelBase;
     protected static ArrayNumber: ModelFormat;

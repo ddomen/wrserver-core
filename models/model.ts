@@ -1,4 +1,5 @@
 import { Constructor, ClassOf } from '../wrserver';
+import { TLSSocket } from 'tls';
 
 export type ModelBaseExtender<T extends ModelBase> = T;
 export type ModelType<T extends ModelBase = any> = ClassOf<T>;
@@ -105,8 +106,11 @@ export abstract class ModelBase {
     /** ID Format shorthand, generates a static ID member with automatic increment [See ModelBase.Field] */
     public static ID(Model: any){ Model.ID = Number(Model.ID)||1; return Model.Number('id', () => Model.ID++);}
 
+    /** Check if a model can be validated */
+    protected static checkValidity<T extends ModelBase>(model: T, ...args: any[]): boolean{ return true; }
+
     /** Get a Model by its name (exclude model from the name) */
-    public static getByName(name: string){
+    public static getByName<T extends ModelBase = any>(name: string): T{
         if(!name){ return null; }
         let n = name.toLocaleLowerCase();
         n = n[0].toUpperCase() + n.substr(1) + 'Model';
@@ -126,7 +130,7 @@ export abstract class ModelBase {
 
     /** Represent the table name which can be saved on a file */
     protected static Table: string;
-    private static MODELS: { [key: string]: Constructor } = {};
+    private static MODELS: { [key: string]: ModelBaseExtender<any> } = {};
 }
 
 export function Model(constructor: Constructor){ ModelBase.addModel(constructor); }
