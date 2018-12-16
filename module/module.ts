@@ -2,6 +2,10 @@ import { Controller } from '../controller';
 import { Connection, IConnectionIncomingParsed, IConnectionOutcome, Emitter } from '../component';
 import { Service } from '../service';
 import { ModelBase } from '../models';
+<<<<<<< HEAD
+=======
+import { ClassOf, Constructor, Abstract, InstanciableClass } from '../wrserver';
+>>>>>>> 5ab60deaf140b985a72815fcfdd4d16869687d28
 import { Event } from '../events';
 
 export type ModuleType = typeof Module;
