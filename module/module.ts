@@ -1,7 +1,8 @@
 import { Controller } from '../controller';
-import { Connection, IConnectionIncomingParsed, IConnectionOutcome } from '../component';
+import { Connection, IConnectionIncomingParsed, IConnectionOutcome, Emitter } from '../component';
 import { Service } from '../service';
 import { ModelBase } from '../models';
+import { Event } from '../events';
 
 export type ModuleType = typeof Module;
 
@@ -17,6 +18,8 @@ export abstract class Module {
     private _services: { [name: string]: Service };
     private _models: { [name: string]: typeof ModelBase };
 
+    constructor(protected events: Emitter){}
+
     /** Inject service and calculate models to use in this module */
     public inject(services: Service[]){
         this._services = {};
@@ -30,7 +33,8 @@ export abstract class Module {
     public digest(connection: Connection, message: IConnectionIncomingParsed): IConnectionOutcome {
         let cnt = this.controllers.find(c => c.section == message.section);
         if(cnt){
-            let cm: Controller = new (cnt as any)(connection, this._services, this._models);
+            let cm: Controller = new (cnt as any)(connection, this.events, this._services, this._models);
+            this.events.emit<Event.Module.Digest.Type>(Event.Module.Digest.Name, cm);
             return cm.digest(message);
         }
         return null

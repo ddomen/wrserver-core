@@ -4,7 +4,7 @@ import * as BODYPARSER from 'body-parser';
 import * as HTTP from 'http';
 import * as PATH from 'path';
 
-import { Connection, Emitter, Console, EventModel } from './component';
+import { Connection, Emitter, Console, IConnectionOutcome, filter } from './component';
 import { Service } from './service';
 import { Module } from './module';
 import { Codes } from './component';
@@ -21,9 +21,14 @@ export type Abstract = Function & Prototyped;
 export type Constructor = { new (...args: any[]): any, [key: string]:any };
 /** Class type */
 export type Class = Abstract | Constructor;
+/** Class type built from another type */
 export type ClassOf<T> = Class & T;
+/** Instanciable Class type */
+export type InstanciableClass<T = any> = Constructor & T;
 /** An "any" Instance of a specified class */
 export type Instance<U = any, T extends U = any> = T;
+/** Outcome message for broadcasting (added filter function) */
+export type IBroadcastOutcome = IConnectionOutcome & { filter?: filter };
 
 /**
  * WRServer - Websocket Rest Server
@@ -63,11 +68,12 @@ export class WRServer {
             .initServices(srv)
             .injectModules();
         
-        this.events.once('service.all.ready', () => {
+        this.events.once<Event.Service.AllReady.Type>(Event.Service.AllReady.Name, () => {
             this.console.service('all services initialized');
             this.initHttp().initWS().start();
         })
-        this.events.on('server.broadcast', (event: EventModel<Event.Server.Broadcast>) => { this.broadcast(event.data.class, event.data.data, event.data.filter); });
+        this.events.on<Event.Server.Broadcast.Type>(Event.Server.Broadcast.Name,
+            event => { this.broadcast(event.data); });
 
         this.wsprotocol = this.wsprotocol.toLowerCase();
     }
@@ -77,7 +83,7 @@ export class WRServer {
         this.console.module('initializing ' + (dependencies ? dependencies.constructor.name + ' dependencies' : 'modules') + ':', modules.map(x => x.name));
         modules.forEach(mod => {
             if(!this.modules.find(m => m.constructor == mod)){
-                let nmod: Module = new (mod as any)();
+                let nmod: Module = new (mod as any)(this.events);
                 this.modules.push(nmod);
                 services.push(...nmod.services);
                 this.codes.push(...nmod.codes.filter(code => !this.codes.includes(code)));
@@ -93,10 +99,10 @@ export class WRServer {
             svsReady = uniqueServices.map(x => false);
         this.console.service('initializing services:', uniqueServices.map(x => x.name));
         uniqueServices.forEach((s, i) => {
-            this.events.once('service.ready', ()=>{
+            this.events.once<Event.Service.Ready.Type>(Event.Service.Ready.Name, ()=>{
                 svsReady[i] = true;
                 this.console.service('service', s.name, 'ready')
-                if(svsReady.every(x => x)){ this.events.fire('service.all.ready'); }
+                if(svsReady.every(x => x)){ this.events.fire<Event.Service.AllReady.Type>(Event.Service.AllReady.Name); }
             }, s.name);
             let serv = new (s as any)(this.events);
             this.services.push(serv);
@@ -122,12 +128,12 @@ export class WRServer {
         this.app.use((err: Error, req: EXPRESS.Request, res: EXPRESS.Response, next: EXPRESS.NextFunction) => { this.error(err, req.url, res); });
 
         this.app.get('*', (req: EXPRESS.Request, res: EXPRESS.Response) => { this.get(req, res); });
-        this.app.post('*', (req: EXPRESS.Request, res: EXPRESS.Response) => { this.badMethod(res); });
-        this.app.delete('*', (req: EXPRESS.Request, res: EXPRESS.Response) => { this.badMethod(res); });
-        this.app.purge('*', (req: EXPRESS.Request, res: EXPRESS.Response) => { this.badMethod(res); });
-        this.app.put('*', (req: EXPRESS.Request, res: EXPRESS.Response) => { this.badMethod(res); });
-        this.app.options('*', (req: EXPRESS.Request, res: EXPRESS.Response) => { this.badMethod(res); });
-        this.app.options('*', (req: EXPRESS.Request, res: EXPRESS.Response) => { this.badMethod(res); });
+        this.app.post('*', (req: EXPRESS.Request, res: EXPRESS.Response) => { this.badMethod(req, res); });
+        this.app.delete('*', (req: EXPRESS.Request, res: EXPRESS.Response) => { this.badMethod(req, res); });
+        this.app.purge('*', (req: EXPRESS.Request, res: EXPRESS.Response) => { this.badMethod(req, res); });
+        this.app.put('*', (req: EXPRESS.Request, res: EXPRESS.Response) => { this.badMethod(req, res); });
+        this.app.options('*', (req: EXPRESS.Request, res: EXPRESS.Response) => { this.badMethod(req, res); });
+        this.app.options('*', (req: EXPRESS.Request, res: EXPRESS.Response) => { this.badMethod(req, res); });
 
         return this;
     }
@@ -140,14 +146,17 @@ export class WRServer {
 
     /** Start server listening */
     protected start(): this{
-        this.server.listen(this.port, () => { this.events.emit('server.ready'); this.console.info('server started'); });
+        this.server.listen(this.port, () => {
+            this.console.info('server started');
+            this.events.emit<Event.Server.Ready.Type>(Event.Server.Ready.Name, null);
+        });
         return this;
     }
 
     /** Send Server Internal Error to Http Response */
     protected error(error: Error, url: string, res: EXPRESS.Response): this{
         this.console.error('Error on path %s\n%s\n', url, error.stack);
-        this.events.emit('server.error', error);
+        this.events.emit<Event.Server.Error.Type>(Event.Server.Error.Name, error);
         res.status(500).send((process.env.NODE_ENV == 'production') ? 'Internal Server Error' : error.stack.replace(/(?:\r\n|\r|\n)/g, '<br />'));
         return this;
     }
@@ -155,12 +164,14 @@ export class WRServer {
     /** Get method callback (allowed for ws handshake) */
     protected get(req: EXPRESS.Request, res: EXPRESS.Response): this{
         this.console.connection('http connection accepted from', req.headers['x-forwarded-for'] || req.connection.remoteAddress)
+        this.events.emit<Event.Server.Url.Type>(Event.Server.Url.Name, req);
         res.sendFile(PATH.resolve(PATH.join(this.directory, WRServer.root, 'index.html')));
         return this;
     }
 
     /** Send Bad Method to Http Response */
-    protected badMethod(res: EXPRESS.Response): this{
+    protected badMethod(req: EXPRESS.Request, res: EXPRESS.Response): this{
+        this.events.emit<Event.Server.BadMethod.Type>(Event.Server.BadMethod.Name, req);
         Connection.HttpBad(res, 405, 'bad method', this.codes);
         return this;
     }
@@ -171,11 +182,13 @@ export class WRServer {
             req.reject(); let ip = '???';
             try{ ip = (req as any).connection.remoteAddress; } catch(e){}
             this.console.connection('ws connection rejected from', ip);
+            this.events.emit<Event.Websocket.Reject.Type>(Event.Websocket.Reject.Name, req);
         }
         else{
             try{
                 let conn = new Connection(req.accept(this.wsprotocol, req.origin), this.events, this.codes, this.modules)
                 this.connections.push(conn);
+                this.events.emit<Event.Websocket.Accept.Type>(Event.Websocket.Accept.Name, conn);
             }
             catch(e){ this.console.error(e); try{ req.reject(); } catch(e){ this.console.error(e); } }
         }
@@ -187,10 +200,10 @@ export class WRServer {
     protected protocolAllowed(protocols: string[]): boolean{ return Array.isArray(protocols) && protocols.length && protocols.includes(this.wsprotocol); }
 
     /** Send a structured ok message to all the filtered connections */
-    public broadcast(cls: string, data: any, filter?: (value: any,  index: number, array: Connection[]) => boolean): this{
-        let wscn = this.connections;
-        if(typeof filter == 'function'){ wscn = wscn.filter((c,i,cs) => filter.call(c, c.get('auth'), i, cs)); }
-        wscn.forEach(ws => { ws.ok(cls, data); })
+    public broadcast(message: IConnectionOutcome, filter?: filter): this{
+        let connections = this.connections;
+        if(typeof filter == 'function'){ connections = connections.filter(filter); }
+        connections.forEach(connection => { connection.send(message); })
         return this;
     }
 

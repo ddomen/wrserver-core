@@ -8,10 +8,15 @@ export class Emitter {
     private composers: ComposerModel[] = [];
     private fired: EventModel[] = [];
 
+    constructor(){
+        if(Emitter.Instance){ return Emitter.Instance; }
+        else{ Emitter.Instance = this; }
+    }
+
     private get htypes(): string[]{ return Object.keys(this.handlers); }
 
     /** Emit an event */
-    public emit<T = any>(type: string, data: T = null, name: string = null, like: boolean = true): this{
+    public emit<T extends Event = Event.Any.Type>(type: string, data: T = null, name: string = null, like: boolean = true): this{
         let event = new EventModel(type, name, data);
         this.fired.push(event);
         if(this.handlers[type]){
@@ -34,17 +39,17 @@ export class Emitter {
     }
 
     /** Emit an event only if is not already emitted */
-    public fire<T = any>(type: string, data: T = null, name: string = null, like: boolean = true): this{
-        if(!this.fired.find(ev => ev.type == type && (!name || ev.name == name))){ this.emit(type, data, name, like); }
+    public fire<T extends Event = Event.Any.Type>(type: string, data: T = null, name: string = null, like: boolean = true): this{
+        if(!this.fired.find(ev => ev.type == type && (!name || ev.name == name))){ this.emit<T>(type, data, name, like); }
         else if(like){
             let htypes = this.htypes.filter(t => !!t.match(type));
-            htypes.forEach(ht => { if(!this.fired.find(ev => ev.type == ht && (!name || ev.name == name))){ this.emit(type, data, name, like); } })
+            htypes.forEach(ht => { if(!this.fired.find(ev => ev.type == ht && (!name || ev.name == name))){ this.emit<T>(type, data, name, like); } })
         }
         return this;
     }
 
     /** Execute the callback every time receives a type event */
-    public on<T = any>(type: string, callback: EmitterCallback<T>, name: string = null, times?: number, like: boolean = false): this{
+    public on<T extends Event = Event.Any.Type>(type: string, callback: EmitterCallback<T>, name: string = null, times?: number, like: boolean = false): this{
         if(!this.handlers[type]){ this.handlers[type] = []; }
         this.handlers[type].push(new HandlerModel(name, callback, times, like));
         return this;
@@ -59,7 +64,7 @@ export class Emitter {
     /** Execute the callback the first time receives a type event.
      * 
         If the event is already emitted execute the callback for the first emitted type event */
-    public once<T = any>(type: string, callback: EmitterCallback<T>, name: string = null): this{
+    public once<T extends Event = Event.Any.Type>(type: string, callback: EmitterCallback<T>, name: string = null): this{
         if(!this.handlers[type]){ this.handlers[type] = []; }
         let hs = new HandlerModel(name, callback, 1),
             ev = this.fired.filter(e => e.type == type && (!name || e.name == name))[0];
@@ -71,24 +76,24 @@ export class Emitter {
     /** Execute the callback the first time receives a type[] event.
      * 
         If the event is already emitted execute the callback for the first emitted type[] event */
-    public onces<T = any>(types: string[], callback: EmitterCallback<T>, name: string = null): this{
+    public onces<T extends Event = Event.Any.Type>(types: string[], callback: EmitterCallback<T>, name: string = null): this{
         if(Array.isArray(types) && types.length){
-            types.length == 1 ?  this.once(types.shift(), callback, name) : this.once(types.shift(), ()=>{ this.onces(types, callback, name); }, name);
+            types.length == 1 ?  this.once<T>(types.shift(), callback, name) : this.once<T>(types.shift(), ()=>{ this.onces<T>(types, callback, name); }, name);
         }
         return this
     }
 
     /** Execute the callback every time receives a type[] event */
-    public ons<T = any>(types: string[], callback: EmitterCallback<T>, name: string = null, times?: number): this{
-        types.forEach(t => { this.on(t, callback, name, times) });
+    public ons<T extends Event = Event.Any.Type>(types: string[], callback: EmitterCallback<T>, name: string = null, times?: number): this{
+        types.forEach(t => { this.on<T>(t, callback, name, times) });
         return this;
     }
 
     /** Execute the callback every time receives a type-like event (event type match callback type) */
-    public like<T = any>(type: string, callback: EmitterCallback<T>, name: string = null, times?: number): this{ return this.on(type, callback, name, times, true); }
+    public like<T = any>(type: string, callback: EmitterCallback<T>, name: string = null, times?: number): this{ return this.on<T>(type, callback, name, times, true); }
 
     /** Make a request to retrive the result of a responder type event */
-    public request<T = any, U extends Event.Event = Event.Any>(type: string, event: EventModel<U>): T{
+    public request<T = any, U extends Event = Event.Any.Type>(type: string, event: EventModel<U>): T{
         if(event && typeof event.type == 'string' && event.type && this.responders[type]){ return this.responders[type].respond(event); }
         return null;
     }
@@ -129,6 +134,8 @@ export class Emitter {
 
     /** Check if an event has already fired at least once */
     public hasFired(type: string, name: string = null){ return this.fired.filter(ev => ev.type == type && (!name || ev.name == name)).length }
+
+    private static Instance: Emitter;
 }
 
 export class EventModel<T = any> { constructor(public type: string, public name: string = null, public data: T = null){} }

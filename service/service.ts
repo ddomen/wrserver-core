@@ -1,4 +1,5 @@
 import { Emitter } from "../component";
+import { Event } from "../events";
 
 export type ServiceType = typeof Service;
 
@@ -8,7 +9,7 @@ export abstract class Service {
 
     /** Fire the ready event for initialize the server */
     protected ready(){
-        this.events.fire('service.ready', this, this.constructor.name);
+        this.events.fire<Event.Service.Ready.Type>(Event.Service.Ready.Name, this, this.constructor.name);
         return this;
     }
 }

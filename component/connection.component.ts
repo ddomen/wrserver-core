@@ -4,6 +4,7 @@ import { Emitter } from './emitter.component';
 import { Codes } from './code.component';
 import { Module } from '../module';
 import { Controller } from '../controller';
+import { Event } from '../events';
 
 /** Incoming not parsed message (raw utf8 - buffered) */
 export interface IConnectionIncomingMessage { type: 'utf8' | 'binary', utf8Data: string }
@@ -12,9 +13,11 @@ export interface IConnectionIncomingParsed { target: string, section: string, pa
 /** Outcoming structured ok message */
 export interface IConnectionOutcomeMessage{ class: string, data: any, id?: number }
 /** Outcoming structured bad message */
-export interface IConnectionOutcomeBadMessage{ code: string, message: string, bad: boolean }
+export interface IConnectionOutcomeBadMessage { code: string, message: string, bad: boolean }
 /** Outcoming helper for Controller returns */
-export type IConnectionOutcome = IConnectionOutcomeMessage | IConnectionOutcomeBadMessage | Symbol | string ;
+export type IConnectionOutcome = ConnectionResponse | IConnectionOutcomeMessage | IConnectionOutcomeBadMessage | Symbol | string ;
+/** Filter function for connection broadcast */
+export type filter = (connection: Connection, index: number, array: Connection[]) => boolean
 
 /** A Connection wrapper for ws.connection */
 export class Connection{
@@ -39,20 +42,22 @@ export class Connection{
         this.socket.on('error', (err: Error) => this.onError(err));
         this.socket.on('close', (code: number, reason: string) => this.onClose(code, reason));
         this.socket.on('message', ((message: IConnectionIncomingMessage) => this.onMessage(message)) as any);
+
         return this;
     }
 
     /** Event of initializing */
     protected onRise(): this{
-        this.events.emit('connection.rise', this)
+        this.events.emit<Event.Connection.Rise.Type>(Event.Connection.Rise.Name, this)
         this.ok('codes', this.codes, -1);
         return this;
     }
 
     /** Event of dropping connection (fired when closed in any way - accidentally or not) */
     protected onDrop(): this{
-        this.events.emit('connection.drop', this)
+        this.events.emit<Event.Connection.Drop.Type>(Event.Connection.Drop.Name, this)
         let auth = this.get('auth');
+        //TODO: pass it to auth service
         if(auth){
             auth.disconnect();
             this.events.emit('auth.disconnect', auth);
@@ -62,24 +67,28 @@ export class Connection{
 
     /** Event of closing connection (fired when not accidentally closed) */
     protected onClose(code: number, reason: string): this{
+        this.events.emit<Event.Connection.Close.Type>(Event.Connection.Close.Name, this);
         this.onDrop();
         return this;
     }
 
     /** Event of error in connection */
     protected onError(error: Error): this{
+        this.events.emit<Event.Connection.Error.Type>(Event.Connection.Error.Name, error);
         this.onDrop();
         return this;
     }
 
     /** Event when pinging the socket (ping - pong messages) */
     protected onPing(): this{
+        this.events.emit<Event.Connection.Ping.Type>(Event.Connection.Ping.Name, this);
         this.set('lastPing', new Date());
         return this.pong();
     }
 
     /** Event fired when reciving message (still not parsed) */
     protected onMessage(message: IConnectionIncomingMessage): this{
+        this.events.emit<Event.Connection.Message.Type>(Event.Connection.Message.Name, message);
         this.set('lastMessage', new Date());
         if(message.type == 'utf8'){
             if(message.utf8Data == 'ping'){ this.onPing() }
@@ -97,10 +106,12 @@ export class Connection{
 
     /** Event fired when receiving a parsed message */
     protected onParsed(message: IConnectionIncomingParsed): this{
+        this.events.emit<Event.Connection.ParsedMessage.Type>(Event.Connection.ParsedMessage.Name, message);
         if(message.id){ this.set('wsid', message.id); }
         if(!message.target){ return this.bad('bad target'); }
         let mod = this.modules.find(m => m.constructor.name.toLowerCase() == message.target.toLowerCase()+'module');
         if(mod){
+            this.events.emit<Event.Connection.Digest.Type>(Event.Connection.Digest.Name, mod);
             let digest = mod.digest(this, message);
             if(!digest){ return this.bad('bad section'); }
             else if(digest == Controller.NotDig){ return this.bad('bad page'); }
@@ -124,13 +135,17 @@ export class Connection{
     }
 
     /** Send simple message (not structured) to the socket */
-    public send(message: any, json: boolean = true, binary: boolean = false) : this{
+    public send(message:  IConnectionOutcome, json: boolean = true, binary: boolean = false) : this{
+        this.events.emit<Event.Connection.Send.Type>(Event.Connection.Send.Name, message);
         (this.socket[binary ? 'sendBytes' : 'sendUTF'] as any)(json ? JSON.stringify(message) : message);
         return this;
     }
 
     /** Make a pong response to ping request */
-    public pong(): this{ return this.send('pong', false, false); }
+    public pong(): this{
+        this.events.emit<Event.Connection.Pong.Type>(Event.Connection.Pong.Name, this);
+        return this.send('pong', false, false);
+    }
 
     /** Send a bad (structured) response to the socket by numeric code [pref use 'bad' method] */
     public badResponse(code: number = 1, message: any = '', id: number = this.wsid): this{ return this.send(new ConnectionResponse(id, code, message, this.codes)); }
@@ -143,8 +158,8 @@ export class Connection{
     public ok(cls: string, data: any, id: number = this.wsid): this { return this.okResponse(cls, cls == 'code' ? this.getCode(data) : data, id); }
 
     /** Send an ok (structured) repsponse to all connections (filtered by filter param callback) */
-    public broadcast(cls: string, data: any, filter?: (connection: Connection, index: number, array: Connection[]) => boolean): this{
-        this.events.emit('server.broadcast', { type: 'connection', class: cls, data, filter});
+    public broadcast(cls: string, data: any, filter?: filter): this{
+        this.events.emit<Event.Server.Broadcast.Type>(Event.Server.Broadcast.Name, { class: cls, data, filter});
         return this;
     }
 
