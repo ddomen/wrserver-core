@@ -5,29 +5,30 @@ export declare class Emitter {
     private responders;
     private composers;
     private fired;
+    constructor();
     private readonly htypes;
     /** Emit an event */
-    emit<T = any>(type: string, data?: T, name?: string, like?: boolean): this;
+    emit<T extends Event = Event.Any.Type>(type: string, data?: T, name?: string, like?: boolean): this;
     /** Emit an event only if is not already emitted */
-    fire<T = any>(type: string, data?: T, name?: string, like?: boolean): this;
+    fire<T extends Event = Event.Any.Type>(type: string, data?: T, name?: string, like?: boolean): this;
     /** Execute the callback every time receives a type event */
-    on<T = any>(type: string, callback: EmitterCallback<T>, name?: string, times?: number, like?: boolean): this;
+    on<T extends Event = Event.Any.Type>(type: string, callback: EmitterCallback<T>, name?: string, times?: number, like?: boolean): this;
     /** Remove handlers for type events */
     off(type: string, name?: string): this;
     /** Execute the callback the first time receives a type event.
      *
         If the event is already emitted execute the callback for the first emitted type event */
-    once<T = any>(type: string, callback: EmitterCallback<T>, name?: string): this;
+    once<T extends Event = Event.Any.Type>(type: string, callback: EmitterCallback<T>, name?: string): this;
     /** Execute the callback the first time receives a type[] event.
      *
         If the event is already emitted execute the callback for the first emitted type[] event */
-    onces<T = any>(types: string[], callback: EmitterCallback<T>, name?: string): this;
+    onces<T extends Event = Event.Any.Type>(types: string[], callback: EmitterCallback<T>, name?: string): this;
     /** Execute the callback every time receives a type[] event */
-    ons<T = any>(types: string[], callback: EmitterCallback<T>, name?: string, times?: number): this;
+    ons<T extends Event = Event.Any.Type>(types: string[], callback: EmitterCallback<T>, name?: string, times?: number): this;
     /** Execute the callback every time receives a type-like event (event type match callback type) */
     like<T = any>(type: string, callback: EmitterCallback<T>, name?: string, times?: number): this;
     /** Make a request to retrive the result of a responder type event */
-    request<T = any, U extends Event.Event = Event.Any>(type: string, event: EventModel<U>): T;
+    request<T = any, U extends Event = Event.Any.Type>(type: string, event: EventModel<U>): T;
     /** Respond to an type event with a result */
     respond<T = any>(type: string, response: EventModel<T> | EmitterCallback<T>, callable?: boolean, name?: string, times?: number): this;
     /** Make a composed request and add it to the composed handlers.
@@ -47,6 +48,7 @@ export declare class Emitter {
     decompose<T = any>(composer: T, data?: any, name?: string): this;
     /** Check if an event has already fired at least once */
     hasFired(type: string, name?: string): number;
+    private static Instance;
 }
 export declare class EventModel<T = any> {
     type: string;

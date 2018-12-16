@@ -1,23 +1,28 @@
-import { Connection, IConnectionIncomingParsed, IConnectionOutcome } from '../component';
+import { Connection, IConnectionIncomingParsed, IConnectionOutcome, Emitter } from '../component';
 import { Service } from "../service";
 import { ModelBase } from "../models";
+/** Controller interface for default method */
 export interface IControllerDefault {
     default(message: IConnectionIncomingParsed): IConnectionOutcome;
 }
+/** Type of Controller */
 export declare type ControllerType = typeof Controller;
+/** Type of Page */
+export declare type Page = (message: IConnectionIncomingParsed) => IConnectionOutcome;
 /** Controller Base class [your controllers should extends this class and have 'Controller' at the end of the name]
 
  * Every method linked to a page should return a 'ConnectionOutcome'
 */
 export declare abstract class Controller {
     protected connection: Connection;
+    protected events: Emitter;
     protected services: {
         [name: string]: any;
     };
     protected models: {
         [name: string]: any;
     };
-    constructor(connection: Connection, services: {
+    constructor(connection: Connection, events: Emitter, services: {
         [name: string]: any;
     }, models: {
         [name: string]: any;

@@ -2,7 +2,7 @@
 import EXPRESS from 'express';
 import * as WS from 'websocket';
 import * as HTTP from 'http';
-import { Connection, Emitter, Console } from './component';
+import { Connection, Emitter, Console, IConnectionOutcome, filter } from './component';
 import { Service } from './service';
 import { Module } from './module';
 import { ModelBase } from './models';
@@ -23,9 +23,16 @@ export declare type Constructor = {
 };
 /** Class type */
 export declare type Class = Abstract | Constructor;
+/** Class type built from another type */
 export declare type ClassOf<T> = Class & T;
+/** Instanciable Class type */
+export declare type InstanciableClass<T = any> = Constructor & T;
 /** An "any" Instance of a specified class */
 export declare type Instance<U = any, T extends U = any> = T;
+/** Outcome message for broadcasting (added filter function) */
+export declare type IBroadcastOutcome = IConnectionOutcome & {
+    filter?: filter;
+};
 /**
  * WRServer - Websocket Rest Server
  *
@@ -69,7 +76,7 @@ export declare class WRServer {
     /** Get method callback (allowed for ws handshake) */
     protected get(req: EXPRESS.Request, res: EXPRESS.Response): this;
     /** Send Bad Method to Http Response */
-    protected badMethod(res: EXPRESS.Response): this;
+    protected badMethod(req: EXPRESS.Request, res: EXPRESS.Response): this;
     /** Elaborate websoket request */
     protected wsrequest(req: WS.request): this;
     /** Origin Allow callback for ws requests */
@@ -77,7 +84,7 @@ export declare class WRServer {
     /** Protocol Allow callback for ws requests */
     protected protocolAllowed(protocols: string[]): boolean;
     /** Send a structured ok message to all the filtered connections */
-    broadcast(cls: string, data: any, filter?: (value: any, index: number, array: Connection[]) => boolean): this;
+    broadcast(message: IConnectionOutcome, filter?: filter): this;
     /** Enstabilish the static root for the server */
     static withRoot(directory: string): typeof WRServer;
     protected static root: string;
