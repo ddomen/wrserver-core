@@ -1,12 +1,14 @@
 import { Event } from '../events';
 
-export type EmitterCallback<T = any> = (event: EventModel<T>) => void;
+export type EmitterCallback<T extends Event = Event.Any.Type, R = void> = (event: EventModel<T>) => R;
+
+export type EventResponse<T extends Event = Event.Any.Type, R = void> = EventModel<T> | EmitterCallback<T, R>;
 
 export class Emitter {
-    private handlers: { [key: string]: HandlerModel[] } = {};
-    private responders: { [key: string]: ResponderModel } = {};
-    private composers: ComposerModel[] = [];
-    private fired: EventModel[] = [];
+    private handlers: { [key: string]: HandlerModel<any>[] } = {};
+    private responders: { [key: string]: ResponderModel<any> } = {};
+    private composers: ComposerModel<any>[] = [];
+    private fired: EventModel<any>[] = [];
 
     constructor(){
         if(Emitter.Instance){ return Emitter.Instance; }
@@ -51,7 +53,7 @@ export class Emitter {
     /** Execute the callback every time receives a type event */
     public on<T extends Event = Event.Any.Type>(type: string, callback: EmitterCallback<T>, name: string = null, times?: number, like: boolean = false): this{
         if(!this.handlers[type]){ this.handlers[type] = []; }
-        this.handlers[type].push(new HandlerModel(name, callback, times, like));
+        this.handlers[type].push((new HandlerModel<T>(name, callback, times, like)) as HandlerModel<Event.Any.Type>);
         return this;
     }
 
@@ -68,7 +70,7 @@ export class Emitter {
         if(!this.handlers[type]){ this.handlers[type] = []; }
         let hs = new HandlerModel(name, callback, 1),
             ev = this.fired.filter(e => e.type == type && (!name || e.name == name))[0];
-        if(ev){ hs.call(ev); }
+        if(ev){ hs.call(ev as EventModel<T>); }
         else{ this.handlers[type].push(hs); }
         return this;
     }
@@ -90,7 +92,7 @@ export class Emitter {
     }
 
     /** Execute the callback every time receives a type-like event (event type match callback type) */
-    public like<T = any>(type: string, callback: EmitterCallback<T>, name: string = null, times?: number): this{ return this.on<T>(type, callback, name, times, true); }
+    public like<T extends Event = Event.Any.Type>(type: string, callback: EmitterCallback<T>, name: string = null, times?: number): this{ return this.on<T>(type, callback, name, times, true); }
 
     /** Make a request to retrive the result of a responder type event */
     public request<T = any, U extends Event = Event.Any.Type>(type: string, event: EventModel<U>): T{
@@ -99,8 +101,8 @@ export class Emitter {
     }
 
     /** Respond to an type event with a result */
-    public respond<T = any>(type: string, response: EventModel<T> | EmitterCallback<T>, callable: boolean = true, name: string = null, times?: number): this{
-        if(!this.responders[type]){ this.responders[type] = new ResponderModel(name, response, callable, times); }
+    public respond<T = any, U extends Event = Event.Any.Type>(type: string, response: EventResponse<U>, callable: boolean = true, name: string = null, times?: number): this{
+        if(!this.responders[type]){ this.responders[type] = new ResponderModel<U, T>(name, response, callable, times); }
         return this;
     }
 
@@ -138,7 +140,7 @@ export class Emitter {
     private static Instance: Emitter;
 }
 
-export class EventModel<T = any> { constructor(public type: string, public name: string = null, public data: T = null){} }
+export class EventModel<T extends Event = Event.Any.Type> { constructor(public type: string, public name: string = null, public data: T = null){} }
 
 class Handler {
     protected count: number = 0;
@@ -146,14 +148,14 @@ class Handler {
     public get elasped(): boolean{ return this.count >= this.times; }
 }
 
-export class HandlerModel<H = any> extends Handler{
+export class HandlerModel<H extends Event = Event.Any.Type> extends Handler{
     constructor(name: string, public callback: EmitterCallback<H>, times: number = Infinity, public like: boolean = false){ super(name, times)}
-    public call<T = any>(event: EventModel<T>): this{ if(typeof this.callback == 'function' && !this.elasped){ this.callback.call(null, event); this.count++; } return this; }
+    public call(event: EventModel<H>): this{ if(typeof this.callback == 'function' && !this.elasped){ this.callback.call(null, event); this.count++; } return this; }
 }
 
-export class ResponderModel<R = any> extends Handler {
+export class ResponderModel<R = any, T extends Event = Event.Any.Type> extends Handler {
     constructor(name: string, public response: EventModel<R> | EmitterCallback<R>, public callable: boolean = true, times: number = Infinity){ super(name, times); }
-    public respond(event: EventModel<R>): R{
+    public respond(event: EventModel<T>): R{
         if(!this.elasped){
             if(this.callable && typeof this.response == 'function'){ return this.response.call(null, event); }
             else if(typeof this.response != 'function'){ return this.response.data; }
@@ -162,7 +164,7 @@ export class ResponderModel<R = any> extends Handler {
     }
 }
 
-export class ComposerModel<T = any> extends Handler {
+export class ComposerModel<T extends Event = Event.Any.Type> extends Handler {
     constructor(name: string, public composer: T, public callback: Function, times: number = Infinity, public callable: boolean = true){ super(name, times); }
     public call(event: EventModel): this{ if(typeof this.callback == 'function' && !this.elasped){ this.callback.call(null, event); this.count++; } return this; }
     protected decompose(target: any, composer: any = this.composer): any{

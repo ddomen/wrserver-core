@@ -1,4 +1,4 @@
-import { Connection, IConnectionIncomingParsed, IConnectionOutcome, Emitter } from '../component'
+import { Connection, IConnectionIncomingParsed, IConnectionOutcome, Emitter, InterceptorCollection } from '../component'
 import { Service } from "../service";
 import { ModelBase, Model } from "../models";
 import { Event } from '../events';
@@ -20,17 +20,32 @@ export abstract class Controller {
         protected connection: Connection,
         protected events: Emitter,
         protected services: { [name: string]: any },
-        protected models: { [name: string]: any }
+        protected models: { [name: string]: any },
+        protected interceptors: InterceptorCollection
     ){}
 
     /** Digest a parsed message in an readable response */
     public digest(message: IConnectionIncomingParsed): IConnectionOutcome {
         let page: Page = null;
-        if(typeof this[message.page as keyof this] == 'function'){ page = this[message.page as keyof this] as any; }
-        else if(typeof (this as any).default == 'function'){ page = (this as any).default; }
+        let pageStr: keyof this | 'default' = message.page.toLowerCase() as keyof this;
+        if(typeof this[pageStr] == 'function'){ page = this[pageStr] as any; }
+        else if(typeof (this as any).default == 'function'){ pageStr = 'default'; page = (this as any).default; }
+
         this.events.emit<Event.Controller.Digest.Type>(Event.Controller.Digest.Name, page);
-        if(page){ return (page.call(this, message) as IConnectionOutcome) || Controller.BadDig; }
+        if(page){
+            return this.interceptors.intercept(this.constructor.name.toLowerCase() + '.' + pageStr,
+                { type: 'function', callback: (int: Function) => int.call(this, page) },
+                { type: 'null', callback: () => this.callPage(page, message) },
+                { type: 'false', callback: null },
+                { type: 'any', callback: () => this.callPage(page, message) }
+            ) || Controller.BadDig;
+        }
         return Controller.NotDig;
+    }
+
+    protected callPage(page: Function, message: IConnectionIncomingParsed): IConnectionOutcome{
+        if(page){ return page.call(this, message); }
+        return null;
     }
 
     /** Return a readable ok response, with class, and data converted to sendable (if method is present) */

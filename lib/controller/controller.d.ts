@@ -1,4 +1,4 @@
-import { Connection, IConnectionIncomingParsed, IConnectionOutcome, Emitter } from '../component';
+import { Connection, IConnectionIncomingParsed, IConnectionOutcome, Emitter, InterceptorCollection } from '../component';
 import { Service } from "../service";
 import { ModelBase } from "../models";
 /** Controller interface for default method */
@@ -22,13 +22,15 @@ export declare abstract class Controller {
     protected models: {
         [name: string]: any;
     };
+    protected interceptors: InterceptorCollection;
     constructor(connection: Connection, events: Emitter, services: {
         [name: string]: any;
     }, models: {
         [name: string]: any;
-    });
+    }, interceptors: InterceptorCollection);
     /** Digest a parsed message in an readable response */
     digest(message: IConnectionIncomingParsed): IConnectionOutcome;
+    protected callPage(page: Function, message: IConnectionIncomingParsed): IConnectionOutcome;
     /** Return a readable ok response, with class, and data converted to sendable (if method is present) */
     protected ok(cls: string, data: any, sendableArgs?: any[]): IConnectionOutcome;
     /** Return a readable bad response, reporting message with specific code */

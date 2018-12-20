@@ -1,5 +1,6 @@
 import { Event } from '../events';
-export declare type EmitterCallback<T = any> = (event: EventModel<T>) => void;
+export declare type EmitterCallback<T extends Event = Event.Any.Type, R = void> = (event: EventModel<T>) => R;
+export declare type EventResponse<T extends Event = Event.Any.Type, R = void> = EventModel<T> | EmitterCallback<T, R>;
 export declare class Emitter {
     private handlers;
     private responders;
@@ -26,11 +27,11 @@ export declare class Emitter {
     /** Execute the callback every time receives a type[] event */
     ons<T extends Event = Event.Any.Type>(types: string[], callback: EmitterCallback<T>, name?: string, times?: number): this;
     /** Execute the callback every time receives a type-like event (event type match callback type) */
-    like<T = any>(type: string, callback: EmitterCallback<T>, name?: string, times?: number): this;
+    like<T extends Event = Event.Any.Type>(type: string, callback: EmitterCallback<T>, name?: string, times?: number): this;
     /** Make a request to retrive the result of a responder type event */
     request<T = any, U extends Event = Event.Any.Type>(type: string, event: EventModel<U>): T;
     /** Respond to an type event with a result */
-    respond<T = any>(type: string, response: EventModel<T> | EmitterCallback<T>, callable?: boolean, name?: string, times?: number): this;
+    respond<T = any, U extends Event = Event.Any.Type>(type: string, response: EventResponse<U>, callable?: boolean, name?: string, times?: number): this;
     /** Make a composed request and add it to the composed handlers.
      
         A comopsed request will trig if there is at least one composer element that is equal to decompose event.
@@ -50,7 +51,7 @@ export declare class Emitter {
     hasFired(type: string, name?: string): number;
     private static Instance;
 }
-export declare class EventModel<T = any> {
+export declare class EventModel<T extends Event = Event.Any.Type> {
     type: string;
     name: string;
     data: T;
@@ -63,19 +64,19 @@ declare class Handler {
     constructor(name: string, times?: number);
     readonly elasped: boolean;
 }
-export declare class HandlerModel<H = any> extends Handler {
+export declare class HandlerModel<H extends Event = Event.Any.Type> extends Handler {
     callback: EmitterCallback<H>;
     like: boolean;
     constructor(name: string, callback: EmitterCallback<H>, times?: number, like?: boolean);
-    call<T = any>(event: EventModel<T>): this;
+    call(event: EventModel<H>): this;
 }
-export declare class ResponderModel<R = any> extends Handler {
+export declare class ResponderModel<R = any, T extends Event = Event.Any.Type> extends Handler {
     response: EventModel<R> | EmitterCallback<R>;
     callable: boolean;
     constructor(name: string, response: EventModel<R> | EmitterCallback<R>, callable?: boolean, times?: number);
-    respond(event: EventModel<R>): R;
+    respond(event: EventModel<T>): R;
 }
-export declare class ComposerModel<T = any> extends Handler {
+export declare class ComposerModel<T extends Event = Event.Any.Type> extends Handler {
     composer: T;
     callback: Function;
     callable: boolean;

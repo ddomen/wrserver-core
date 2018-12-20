@@ -2,7 +2,7 @@
 import EXPRESS from 'express';
 import * as WS from 'websocket';
 import * as HTTP from 'http';
-import { Connection, Emitter, Console, IConnectionOutcome, filter } from './component';
+import { Connection, Emitter, Console, IConnectionOutcome, filter, InterceptorCollection } from './component';
 import { Service } from './service';
 import { Module } from './module';
 import { ModelBase } from './models';
@@ -16,6 +16,8 @@ export declare type Prototyped = {
 };
 /** Abstract Class type */
 export declare type Abstract = Function & Prototyped;
+/** Abstract Class type built from another type */
+export declare type AbstractOf<T> = Abstract & T;
 /** Type of an object with a constructor method */
 export declare type Constructor = {
     new (...args: any[]): any;
@@ -56,6 +58,7 @@ export declare class WRServer {
     protected connections: Connection[];
     protected services: Service[];
     protected modules: Module[];
+    protected interceptors: InterceptorCollection;
     protected models: (typeof ModelBase)[];
     protected codes: string[];
     constructor(directory: string, port: number, modules?: typeof Module[], wsprotocol?: string);

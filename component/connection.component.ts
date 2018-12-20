@@ -5,6 +5,7 @@ import { Codes } from './code.component';
 import { Module } from '../module';
 import { Controller } from '../controller';
 import { Event } from '../events';
+import { InterceptorCollection } from './interceptor.component';
 
 /** Incoming not parsed message (raw utf8 - buffered) */
 export interface IConnectionIncomingMessage { type: 'utf8' | 'binary', utf8Data: string }
@@ -27,7 +28,8 @@ export class Connection{
         protected socket: WS.connection,
         protected events: Emitter,
         protected codes: string[],
-        protected modules: Module[]
+        protected modules: Module[],
+        protected interceptors: InterceptorCollection
     ){ this.init(); }
 
     /** Retrive current ws.message id */
@@ -49,15 +51,19 @@ export class Connection{
     /** Event of initializing */
     protected onRise(): this{
         this.events.emit<Event.Connection.Rise.Type>(Event.Connection.Rise.Name, this)
-        this.ok('codes', this.codes, -1);
+        this.interceptors.intercept(Event.Connection.Rise.Name,
+            { type: 'string', callback: (int: string) => { this.bad('', int); } },
+            { type: 'any', callback: () => { this.ok('codes', this.codes, -1); } }
+        )
         return this;
     }
 
     /** Event of dropping connection (fired when closed in any way - accidentally or not) */
     protected onDrop(): this{
-        this.events.emit<Event.Connection.Drop.Type>(Event.Connection.Drop.Name, this)
-        let auth = this.get('auth');
+        this.events.emit<Event.Connection.Drop.Type>(Event.Connection.Drop.Name, this);
+        this.interceptors.intercept(Event.Connection.Drop.Name);
         //TODO: pass it to auth service
+        let auth = this.get('auth');
         if(auth){
             auth.disconnect();
             this.events.emit('auth.disconnect', auth);
@@ -68,6 +74,7 @@ export class Connection{
     /** Event of closing connection (fired when not accidentally closed) */
     protected onClose(code: number, reason: string): this{
         this.events.emit<Event.Connection.Close.Type>(Event.Connection.Close.Name, this);
+        this.interceptors.intercept(Event.Connection.Close.Name);
         this.onDrop();
         return this;
     }
@@ -75,6 +82,7 @@ export class Connection{
     /** Event of error in connection */
     protected onError(error: Error): this{
         this.events.emit<Event.Connection.Error.Type>(Event.Connection.Error.Name, error);
+        this.interceptors.intercept(Event.Connection.Error.Name);
         this.onDrop();
         return this;
     }
@@ -83,6 +91,7 @@ export class Connection{
     protected onPing(): this{
         this.events.emit<Event.Connection.Ping.Type>(Event.Connection.Ping.Name, this);
         this.set('lastPing', new Date());
+        this.interceptors.intercept(Event.Connection.Ping.Name);
         return this.pong();
     }
 
@@ -90,6 +99,7 @@ export class Connection{
     protected onMessage(message: IConnectionIncomingMessage): this{
         this.events.emit<Event.Connection.Message.Type>(Event.Connection.Message.Name, message);
         this.set('lastMessage', new Date());
+        this.interceptors.intercept(Event.Connection.Message.Name);
         if(message.type == 'utf8'){
             if(message.utf8Data == 'ping'){ this.onPing() }
             else{
@@ -107,22 +117,32 @@ export class Connection{
     /** Event fired when receiving a parsed message */
     protected onParsed(message: IConnectionIncomingParsed): this{
         this.events.emit<Event.Connection.ParsedMessage.Type>(Event.Connection.ParsedMessage.Name, message);
+        this.interceptors.intercept(Event.Connection.ParsedMessage.Name);
         if(message.id){ this.set('wsid', message.id); }
         if(!message.target){ return this.bad('bad target'); }
         let mod = this.modules.find(m => m.constructor.name.toLowerCase() == message.target.toLowerCase()+'module');
         if(mod){
             this.events.emit<Event.Connection.Digest.Type>(Event.Connection.Digest.Name, mod);
-            let digest = mod.digest(this, message);
-            if(!digest){ return this.bad('bad section'); }
-            else if(digest == Controller.NotDig){ return this.bad('bad page'); }
-            else if(digest == Controller.BadDig){ return this.bad('bad request'); }
-            else if(typeof digest == 'string'){ return this.bad(digest); }
-            else if(typeof digest == 'object' && (digest as IConnectionOutcomeBadMessage).bad){
-                let response = digest as IConnectionOutcomeBadMessage; return this.bad(response.code, response.message);
-            }
-            else{ let response = digest as IConnectionOutcomeMessage; return this.ok(response.class, response.data, response.id); }
+            this.interceptors.intercept(mod.constructor,
+                { type: 'function', callback: (int: Function)=>{ int.call(this); } },
+                { type: 'false', callback: null },
+                { type: 'null', callback: () => { this.digest(mod, message); } },
+                { type: 'any', callback: ()=>{ this.digest(mod, message); } }
+            );
         }
         else{ return this.bad('bad target'); }
+    }
+
+    protected digest(mod: Module, message: IConnectionIncomingParsed): this{
+        let digest = mod.digest(this, message);
+        if(!digest){ return this.bad('bad section'); }
+        else if(digest == Controller.NotDig){ return this.bad('bad page'); }
+        else if(digest == Controller.BadDig){ return this.bad('bad request'); }
+        else if(typeof digest == 'string'){ return this.bad(digest); }
+        else if(typeof digest == 'object' && (digest as IConnectionOutcomeBadMessage).bad){
+            let response = digest as IConnectionOutcomeBadMessage; return this.bad(response.code, response.message);
+        }
+        else{ let response = digest as IConnectionOutcomeMessage; return this.ok(response.class, response.data, response.id); }
     }
 
     /** Get a connection custom data */

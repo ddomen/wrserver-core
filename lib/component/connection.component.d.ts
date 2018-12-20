@@ -1,6 +1,7 @@
 import * as WS from 'websocket';
 import { Emitter } from './emitter.component';
 import { Module } from '../module';
+import { InterceptorCollection } from './interceptor.component';
 /** Incoming not parsed message (raw utf8 - buffered) */
 export interface IConnectionIncomingMessage {
     type: 'utf8' | 'binary';
@@ -37,8 +38,9 @@ export declare class Connection {
     protected events: Emitter;
     protected codes: string[];
     protected modules: Module[];
+    protected interceptors: InterceptorCollection;
     protected data: any;
-    constructor(socket: WS.connection, events: Emitter, codes: string[], modules: Module[]);
+    constructor(socket: WS.connection, events: Emitter, codes: string[], modules: Module[], interceptors: InterceptorCollection);
     /** Retrive current ws.message id */
     readonly wsid: number;
     /** Try to retrive ip of ws.connection */
@@ -59,6 +61,7 @@ export declare class Connection {
     protected onMessage(message: IConnectionIncomingMessage): this;
     /** Event fired when receiving a parsed message */
     protected onParsed(message: IConnectionIncomingParsed): this;
+    protected digest(mod: Module, message: IConnectionIncomingParsed): this;
     /** Get a connection custom data */
     get<T = any>(name: string, def?: T): T;
     /** Set a connection custom data (default overwrite? = true) */

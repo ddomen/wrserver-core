@@ -4,7 +4,7 @@ import * as BODYPARSER from 'body-parser';
 import * as HTTP from 'http';
 import * as PATH from 'path';
 
-import { Connection, Emitter, Console, IConnectionOutcome, filter } from './component';
+import { Connection, Emitter, Console, IConnectionOutcome, filter, Interceptor, InterceptorCollection } from './component';
 import { Service } from './service';
 import { Module } from './module';
 import { Codes } from './component';
@@ -17,6 +17,8 @@ export abstract class AbstractTypeClass{}
 export type Prototyped = { prototype: object, [key: string]: any };
 /** Abstract Class type */
 export type Abstract = Function & Prototyped;
+/** Abstract Class type built from another type */
+export type AbstractOf<T> = Abstract & T;
 /** Type of an object with a constructor method */
 export type Constructor = { new (...args: any[]): any, [key: string]:any };
 /** Class type */
@@ -51,6 +53,7 @@ export class WRServer {
     protected connections: Connection[] = [];
     protected services: Service[] = [];
     protected modules: Module[] = [];
+    protected interceptors: InterceptorCollection = new InterceptorCollection();
     protected models: (typeof ModelBase)[] = [];
     protected codes: string[] = Codes;
 
@@ -88,6 +91,7 @@ export class WRServer {
                 services.push(...nmod.services);
                 this.codes.push(...nmod.codes.filter(code => !this.codes.includes(code)));
                 this.initModules(nmod.dependencies, services, nmod);
+                this.interceptors.push(...nmod.interceptors);
             }
         })
         return this;
@@ -186,7 +190,7 @@ export class WRServer {
         }
         else{
             try{
-                let conn = new Connection(req.accept(this.wsprotocol, req.origin), this.events, this.codes, this.modules)
+                let conn = new Connection(req.accept(this.wsprotocol, req.origin), this.events, this.codes, this.modules, this.interceptors)
                 this.connections.push(conn);
                 this.events.emit<Event.Websocket.Accept.Type>(Event.Websocket.Accept.Name, conn);
             }
