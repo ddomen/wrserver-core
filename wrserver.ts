@@ -63,13 +63,16 @@ export class WRServer {
         modules: typeof Module[] = [],
         protected wsprotocol: string = 'wrs_prtc'
     ){
+        if(!PATH.isAbsolute(this.directory)){ this.directory = PATH.join(process.cwd(), this.directory);  }
+
         let srv: typeof Service[] = [],
             mods: typeof Module[] = modules.slice()
         this.console.node('version', process.version)
         this.console.info('starting WRS at port', port);
         this.initModules(mods, srv)
             .initServices(srv)
-            .injectModules();
+            .injectModules()
+            .injectServices();
         
         this.events.once<Event.Service.AllReady.Type>(Event.Service.AllReady.Name, () => {
             this.console.service('all services initialized');
@@ -82,23 +85,26 @@ export class WRServer {
     }
     
     /** Initialize modules compiled in the server */
-    protected initModules(modules: typeof Module[], services: typeof Service[], dependencies: Module = null){
+    protected initModules(modules: typeof Module[], services: typeof Service[], dependencies: Module = null): this{
         this.console.module('initializing ' + (dependencies ? dependencies.constructor.name + ' dependencies' : 'modules') + ':', modules.map(x => x.name));
-        modules.forEach(mod => {
-            if(!this.modules.find(m => m.constructor == mod)){
-                let nmod: Module = new (mod as any)(this.events);
-                this.modules.push(nmod);
-                services.push(...nmod.services);
-                this.codes.push(...nmod.codes.filter(code => !this.codes.includes(code)));
-                this.initModules(nmod.dependencies, services, nmod);
-                this.interceptors.push(...nmod.interceptors);
-            }
-        })
+        if(modules.length){
+            modules.forEach(mod => {
+                if(!this.modules.find(m => m.constructor == mod)){
+                    let nmod: Module = new (mod as any)(this.events);
+                    this.modules.push(nmod);
+                    services.push(...nmod.services);
+                    this.codes.push(...nmod.codes.filter(code => !this.codes.includes(code)));
+                    this.initModules(nmod.dependencies, services, nmod);
+                    this.interceptors.push(...nmod.interceptors);
+                }
+            })
+        }
+        else{ this.events.fire<Event.Service.AllReady.Type>(Event.Service.AllReady.Name); }
         return this;
     }
 
     /** Initialize services used by all the server applications (server, modules, controllers) */
-    protected initServices(services: typeof Service[]){
+    protected initServices(services: typeof Service[]): this{
         let uniqueServices = services.filter((v, i, a) => a.indexOf(v) == i),
             svsReady = uniqueServices.map(x => false);
         this.console.service('initializing services:', uniqueServices.map(x => x.name));
@@ -115,11 +121,20 @@ export class WRServer {
     }
 
     /** Inject services in all the used modules */    
-    protected injectModules(){
+    protected injectModules(): this{
         this.modules.forEach(mod => {
             mod.inject(this.services)
             this.console.module('module', mod.constructor.name, 'initialized');
         });
+        return this;
+    }
+
+    /** Inject Interceptors to services */
+    protected injectServices(): this{
+        this.services.forEach(srv => {
+            srv.inject(this.interceptors)
+            this.console.service('service', srv.constructor.name, 'injected');
+        })
         return this;
     }
     
@@ -212,6 +227,6 @@ export class WRServer {
     }
 
     /** Enstabilish the static root for the server */
-    public static withRoot(directory: string){ this.root = directory; return this; }
+    public static withRoot(directory: string): ThisType<WRServer>{ this.root = directory; return this; }
     protected static root: string = 'client';
 }
