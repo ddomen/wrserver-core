@@ -4,7 +4,7 @@ import * as BODYPARSER from 'body-parser';
 import * as HTTP from 'http';
 import * as PATH from 'path';
 
-import { Connection, Emitter, Console, IConnectionOutcome, filter, Interceptor, InterceptorCollection } from './component';
+import { Connection, Emitter, Console, IConnectionOutcome, filter, InterceptorCollection } from './component';
 import { Service, ServiceType } from './service';
 import { Module } from './module';
 import { Codes } from './component';
@@ -121,6 +121,7 @@ export class WRServer {
             }, x.type.name);
             x.service = new (x.type as any)(this.events);
             this.services.push(x.service);
+            this.interceptors.inject(x.service);
         })
         return this;
     }

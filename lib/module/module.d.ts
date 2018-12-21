@@ -1,5 +1,5 @@
 import { ControllerType } from '../controller';
-import { Connection, IConnectionIncomingParsed, IConnectionOutcome, Emitter, Interceptor, InterceptorCollection } from '../component';
+import { Connection, IConnectionIncomingParsed, IConnectionOutcome, Emitter, Interceptor } from '../component';
 import { Service, ServiceType } from '../service';
 import { ModelType } from '../models';
 /** Type of Module */
@@ -15,7 +15,7 @@ export declare abstract class Module {
     codes: string[];
     private _services;
     private _models;
-    protected readonly _interceptors: InterceptorCollection<any>;
+    private _interceptors;
     constructor(events: Emitter);
     /** Inject service and calculate models to use in this module */
     inject(services: Service[]): this;

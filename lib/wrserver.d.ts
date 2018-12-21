@@ -3,7 +3,7 @@ import EXPRESS from 'express';
 import * as WS from 'websocket';
 import * as HTTP from 'http';
 import { Connection, Emitter, Console, IConnectionOutcome, filter, InterceptorCollection } from './component';
-import { Service } from './service';
+import { Service, ServiceType } from './service';
 import { Module } from './module';
 import { ModelBase } from './models';
 /** Abstract Class for type inference */
@@ -65,7 +65,7 @@ export declare class WRServer {
     /** Initialize modules compiled in the server */
     protected initModules(modules: typeof Module[], services: typeof Service[], dependencies?: Module): this;
     /** Initialize services used by all the server applications (server, modules, controllers) */
-    protected initServices(services: typeof Service[]): this;
+    protected initServices(services: ServiceType[]): this;
     /** Inject services in all the used modules */
     protected injectModules(): this;
     /** Inject Interceptors to services */

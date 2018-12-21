@@ -19,17 +19,17 @@ export abstract class Module {
 
     private _services: { [name: string]: Service };
     private _models: { [name: string]: typeof ModelBase };
+    private _interceptors: InterceptorCollection<ControllerType>;
 
-    protected get _interceptors(){ return new InterceptorCollection(this.interceptors); }
+    constructor(protected events: Emitter){ }
 
-    constructor(protected events: Emitter){}
-
-    /** Inject service and calculate models to use in this module */
+    /** Inject service and calculate models and interceptors to use in this module */
     public inject(services: Service[]){
         this._services = {};
         this.services.forEach(s => { let serv = services.find(u => u.constructor == s); this._services[s.name] = serv; });
         this._models = {};
         this.models.forEach(m => { this._models[m.name] = m; });
+        this._interceptors = new InterceptorCollection<ControllerType>(this.interceptors).get<ControllerType>(Interceptor.Controller)
         return this;
     }
 
@@ -37,7 +37,7 @@ export abstract class Module {
     public digest(connection: Connection, message: IConnectionIncomingParsed): IConnectionOutcome {
         let cnt = this.controllers.find(c => c.section == message.section);
         if(cnt){
-            return this._interceptors.intercept(cnt,
+            return this._interceptors.intercept(cnt, [ connection, message ],
                 { type: 'function', callback: (int: Function) => int.call(this) },
                 { type: 'false', callback: null },
                 { type: 'any', callback: () => this.makeController(connection, message, cnt) }

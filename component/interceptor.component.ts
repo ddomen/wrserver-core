@@ -1,6 +1,7 @@
 import { ModuleType } from '../module';
-import { ControllerType } from '../controller';
-import { ServiceType } from '../service';
+import { ControllerType, Controller as ControllerBase } from '../controller';
+import { ServiceType, Service } from '../service';
+import { IConnectionIncomingParsed, Connection as ConnectionComponent, IConnectionOutcome } from './connection.component';
 
 /** Type of Interceptor */
 export type InterceptorType = typeof Interceptor;
@@ -9,17 +10,27 @@ export type InterceptorType = typeof Interceptor;
 export type InterceptTypes = 'string' | 'number' | 'boolean' | 'symbol' | 'undefined' | 'object' | 'function' | 'null' | 'false' | 'true' | 'any';
 
 /** Interface for Interception callbacks */
-export interface IInterceptCallback<T>{ type: InterceptTypes, callback: (type: T) => any };
+export interface IInterceptCallback{ type: InterceptTypes, callback: (type: any) => any };
 
 /** Interceptor for intermodule costumization handler */
 export abstract class Interceptor<T = any> {
     constructor(public type: T){}
 
+    public dependencies: ServiceType[] = [];
+    protected readonly services: { [key: string]: Service };
+    protected readonly NEXT: Symbol = Interceptor.NEXT;
+
     /** Check if the given type has the same type of the Interceptor */
     public check(type: T): boolean{ return this.type == type; }
 
+    /** Inject a service if not present */
+    public inject(service: Service){
+        if(this.dependencies.includes(service.constructor as ServiceType)){ this.services[service.constructor.name] = service; }
+        return this;
+    }
+
     /** Interception callback, must be defined */
-    public abstract intercept(type: T): null | undefined | any;
+    public abstract intercept(type: T, ...args: any[]): null | undefined | Symbol | any;
 
     /** Collection of Interceptor singleton instances */
     private static Instances: Interceptor<any>[] = [];
@@ -36,6 +47,7 @@ export abstract class Interceptor<T = any> {
         return instance;
     }
 
+    public static NEXT: Symbol = Symbol('next');
 }
 
 /** Collection of common Interceptors */
@@ -48,16 +60,19 @@ export namespace Interceptor{
     }
     /** Interceptor for Modules (before module message digestion) */
     export abstract class Module extends Interceptor<ModuleType> {
+        public abstract intercept(type: ModuleType, message: IConnectionIncomingParsed): null | undefined | any;
         /** Attach the Interceptor to a Module */
         public static attach(type: ModuleType): Module{ return super.attachTo<ModuleType>(type); }
     }
     /** Interceptor for Controllers (before controller message digestion) */
     export abstract class Controller extends Interceptor<ControllerType> {
+        public abstract intercept(type: ControllerType, connection: ConnectionComponent, message: IConnectionIncomingParsed): null | IConnectionOutcome | Function | Symbol;
         /** Attach the Interceptor to a Controller */
-        public static attach(type: ControllerType): Controller{ return super.attachTo<ControllerType>(type); }
+        public static attach(type: ControllerType): Controller{ return super.attachTo<ControllerType>(type) as Controller; }
     }
     /** Interceptor for Controller Pages (before page message digestion) */
     export abstract class Page extends Interceptor<string> {
+        public abstract intercept(type: string, message: IConnectionIncomingParsed): null | undefined | any;
         /** Attach the Interceptor to a Page (by string name: <controllerName>.<pageName>) */
         public static attach(type: string): Page{ return super.attachTo<string>(type); }
     }
@@ -81,7 +96,7 @@ export class InterceptorCollection<T = any> {
     }
 
     /** Return a new InterceptorCollection filtering by instance of the given type */
-    public get<R extends Interceptor, U extends typeof Interceptor = any>(type: U): InterceptorCollection<R>{
+    public get<R, U extends typeof Interceptor = any>(type: U): InterceptorCollection<R>{
         return new InterceptorCollection<R>(this.interceptors.filter(int => type.is(int)) as any);
     }
 
@@ -89,24 +104,36 @@ export class InterceptorCollection<T = any> {
     public check(type: T): InterceptorCollection<T>{ return new InterceptorCollection<T>(this.interceptors.filter(int => int.check(type))); }
 
     /** Return the first callable Interception result or null. (NB: any type is always called last) */
-    public intercept(type: T, ...callbacks: IInterceptCallback<T>[]): null | undefined | any {
-        let int = this.callIntercept(type);
-        let intCall = callbacks.find(cb => 
-            (cb.type == 'null' && int == null)
-            || cb.type == typeof int
-            || (cb.type == 'false' && !int)
-            || (cb.type == 'true' && !!int)
-            );
-        if(intCall == null){ return null; }
-        if(intCall){ try{ return intCall.callback.call(null, int); } catch(e){ return null; } }
-        intCall = callbacks.find(cb => cb.type == 'any');
-        if(intCall){ try{ return intCall.callback.call(null, int); } catch(e){ return null; } }
-        return null;
+    public intercept(type: T, args: any[],  ...callbacks: IInterceptCallback[]): null | undefined | any {
+        let int: any = this.callIntercept(type, args),
+            resCall: any = Interceptor.NEXT,
+            intCall: IInterceptCallback = null,
+            called: IInterceptCallback[] = [];
+        while(resCall == Interceptor.NEXT){
+            intCall = callbacks.find(cb => 
+                    !called.includes(cb) && (
+                    (cb.type == 'null' && int == null)
+                    || cb.type == typeof int
+                    || (cb.type == 'false' && !int)
+                    || (cb.type == 'true' && !!int)
+                    )
+                );
+            if(intCall){ try{ resCall = intCall.callback.call(null, int); } catch(e){ resCall = Interceptor.NEXT; } }
+            else{ break; }
+        }
+        if(!intCall){
+            intCall = callbacks.find(cb => cb.type == 'any');
+            if(intCall){ try{ return intCall.callback.call(null, int); } catch(e){ return null; } }
+        }
+        return resCall;
     }
 
+    /** Inject a service into every Interceptor */
+    public inject(service: Service){ this.interceptors.forEach(int => int.inject(service)); return this; }
+
     /** Return the first callable Interception result or null. */
-    protected callIntercept(type: T){
-        let res = this.check(type).interceptors.map(int => int.intercept(type));
+    protected callIntercept(type: T, args: any[]){
+        let res = this.check(type).interceptors.map(int => int.intercept(type, ...args));
         if(res.includes(null)){ return null; }
         if(res.includes(undefined)){ return undefined; }
         return res.find(x => x != null && x != undefined) || null;

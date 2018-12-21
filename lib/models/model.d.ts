@@ -57,8 +57,6 @@ export declare abstract class ModelBase {
     protected static ArrayBoolean: ModelFormat;
     protected static ArrayString: ModelFormat;
     protected static ArrayDate: ModelFormat;
-    /** Represent the table name which can be saved on a file */
-    protected static Table: string;
     private static MODELS;
 }
 export declare function Model(constructor: Constructor): void;

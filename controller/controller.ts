@@ -1,8 +1,7 @@
-import { Connection, IConnectionIncomingParsed, IConnectionOutcome, Emitter, InterceptorCollection } from '../component'
+import { Connection, IConnectionIncomingParsed, IConnectionOutcome, Emitter, InterceptorCollection, Interceptor } from '../component'
 import { Service } from "../service";
 import { ModelBase, ModelType } from "../models";
 import { Event } from '../events';
-import { Module } from '../module';
 
 /** Controller interface for default method */
 export interface IControllerDefault{ default(message: IConnectionIncomingParsed): IConnectionOutcome }
@@ -22,7 +21,7 @@ export abstract class Controller {
         protected events: Emitter,
         protected services: { [name: string]: Service },
         protected models: { [name: string]: ModelType },
-        protected interceptors: InterceptorCollection
+        protected interceptors: InterceptorCollection<string>
     ){}
 
     /** Digest a parsed message in an readable response */
@@ -34,7 +33,7 @@ export abstract class Controller {
 
         this.events.emit<Event.Controller.Digest.Type>(Event.Controller.Digest.Name, page);
         if(page){
-            return this.interceptors.intercept(this.constructor.name.toLowerCase() + '.' + pageStr,
+            return this.interceptors.intercept(this.constructor.name.toLowerCase() + '.' + pageStr, [ message ],
                 { type: 'function', callback: (int: Function) => int.call(this, page) },
                 { type: 'null', callback: () => this.callPage(page, message) },
                 { type: 'false', callback: null },
