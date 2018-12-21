@@ -1,6 +1,7 @@
 import { Connection, IConnectionIncomingParsed, IConnectionOutcome, Emitter, InterceptorCollection } from '../component';
 import { Service } from "../service";
-import { ModelBase } from "../models";
+import { ModelBase, ModelType } from "../models";
+import { Module } from '../module';
 /** Controller interface for default method */
 export interface IControllerDefault {
     default(message: IConnectionIncomingParsed): IConnectionOutcome;
@@ -14,19 +15,20 @@ export declare type Page = (message: IConnectionIncomingParsed) => IConnectionOu
  * Every method linked to a page should return a 'ConnectionOutcome'
 */
 export declare abstract class Controller {
+    protected module: Module;
     protected connection: Connection;
     protected events: Emitter;
     protected services: {
-        [name: string]: any;
+        [name: string]: Service;
     };
     protected models: {
-        [name: string]: any;
+        [name: string]: ModelType;
     };
     protected interceptors: InterceptorCollection;
-    constructor(connection: Connection, events: Emitter, services: {
-        [name: string]: any;
+    constructor(module: Module, connection: Connection, events: Emitter, services: {
+        [name: string]: Service;
     }, models: {
-        [name: string]: any;
+        [name: string]: ModelType;
     }, interceptors: InterceptorCollection);
     /** Digest a parsed message in an readable response */
     digest(message: IConnectionIncomingParsed): IConnectionOutcome;

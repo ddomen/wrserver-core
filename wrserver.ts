@@ -5,7 +5,7 @@ import * as HTTP from 'http';
 import * as PATH from 'path';
 
 import { Connection, Emitter, Console, IConnectionOutcome, filter, Interceptor, InterceptorCollection } from './component';
-import { Service } from './service';
+import { Service, ServiceType } from './service';
 import { Module } from './module';
 import { Codes } from './component';
 import { ModelBase } from './models';
@@ -17,14 +17,14 @@ export abstract class AbstractTypeClass{}
 export type Prototyped = { prototype: object, [key: string]: any };
 /** Abstract Class type */
 export type Abstract = Function & Prototyped;
-/** Abstract Class type built from another type */
-export type AbstractOf<T> = Abstract & T;
 /** Type of an object with a constructor method */
-export type Constructor = { new (...args: any[]): any, [key: string]:any };
+export type Constructor<T = any> = { new (...args: any[]): T, [key: string]: any };
+/** Abstract Class type built from another type */
+export type AbstractOf<T = any> = Abstract & Constructor<T>;
 /** Class type */
-export type Class = Abstract | Constructor;
+export type Class<T = any> = Abstract | Constructor<T>;
 /** Class type built from another type */
-export type ClassOf<T> = Class & T;
+export type ClassOf<T = any> = Class & Constructor<T>;
 /** Instanciable Class type */
 export type InstanciableClass<T = any> = Constructor & T;
 /** An "any" Instance of a specified class */
@@ -104,18 +104,23 @@ export class WRServer {
     }
 
     /** Initialize services used by all the server applications (server, modules, controllers) */
-    protected initServices(services: typeof Service[]): this{
-        let uniqueServices = services.filter((v, i, a) => a.indexOf(v) == i),
-            svsReady = uniqueServices.map(x => false);
-        this.console.service('initializing services:', uniqueServices.map(x => x.name));
-        uniqueServices.forEach((s, i) => {
+    protected initServices(services: ServiceType[]): this{
+        let uniqueServices: ({ service: Service, type: ServiceType })[] = 
+                services.filter((v, i, a) => a.indexOf(v) == i).map(service => ({ service: null, type: service }));
+        this.console.service('initializing services:', uniqueServices.map(x => x.type.name));
+        uniqueServices.forEach(x => {
             this.events.once<Event.Service.Ready.Type>(Event.Service.Ready.Name, ()=>{
-                svsReady[i] = true;
-                this.console.service('service', s.name, 'ready')
-                if(svsReady.every(x => x)){ this.events.fire<Event.Service.AllReady.Type>(Event.Service.AllReady.Name); }
-            }, s.name);
-            let serv = new (s as any)(this.events);
-            this.services.push(serv);
+                this.console.service('service', x.type.name, 'ready')
+                
+                uniqueServices
+                    .filter(y => y.service && y.service.dependencies && y.service.dependencies.includes(x.type))
+                    .filter(y => y.service.dependencies.every(z => { let type = uniqueServices.find(u => u.type == z); return type && !!type.service}))
+                    .forEach(y => y.service.init(...y.service.dependencies.map(d => uniqueServices.find(u => u.type == d).service)));
+
+                if(!uniqueServices.some(x => !x.service)){ this.events.fire<Event.Service.AllReady.Type>(Event.Service.AllReady.Name); }
+            }, x.type.name);
+            x.service = new (x.type as any)(this.events);
+            this.services.push(x.service);
         })
         return this;
     }

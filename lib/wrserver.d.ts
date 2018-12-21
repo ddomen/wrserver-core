@@ -16,17 +16,17 @@ export declare type Prototyped = {
 };
 /** Abstract Class type */
 export declare type Abstract = Function & Prototyped;
-/** Abstract Class type built from another type */
-export declare type AbstractOf<T> = Abstract & T;
 /** Type of an object with a constructor method */
-export declare type Constructor = {
-    new (...args: any[]): any;
+export declare type Constructor<T = any> = {
+    new (...args: any[]): T;
     [key: string]: any;
 };
+/** Abstract Class type built from another type */
+export declare type AbstractOf<T = any> = Abstract & Constructor<T>;
 /** Class type */
-export declare type Class = Abstract | Constructor;
+export declare type Class<T = any> = Abstract | Constructor<T>;
 /** Class type built from another type */
-export declare type ClassOf<T> = Class & T;
+export declare type ClassOf<T = any> = Class & Constructor<T>;
 /** Instanciable Class type */
 export declare type InstanciableClass<T = any> = Constructor & T;
 /** An "any" Instance of a specified class */
@@ -68,6 +68,8 @@ export declare class WRServer {
     protected initServices(services: typeof Service[]): this;
     /** Inject services in all the used modules */
     protected injectModules(): this;
+    /** Inject Interceptors to services */
+    protected injectServices(): this;
     /** Initialize the Http Express Server for accepting WS protocol and rejecting all methods (get excluded) */
     protected initHttp(): this;
     /** Initialize websocket for accepting ws protocol request */
@@ -89,6 +91,6 @@ export declare class WRServer {
     /** Send a structured ok message to all the filtered connections */
     broadcast(message: IConnectionOutcome, filter?: filter): this;
     /** Enstabilish the static root for the server */
-    static withRoot(directory: string): typeof WRServer;
+    static withRoot(directory: string): ThisType<WRServer>;
     protected static root: string;
 }

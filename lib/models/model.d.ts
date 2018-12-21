@@ -1,6 +1,6 @@
-import { Constructor, ClassOf } from '../wrserver';
+import { Constructor } from '../wrserver';
 export declare type ModelBaseExtender<T extends ModelBase> = T;
-export declare type ModelType<T extends ModelBase = any> = ClassOf<T>;
+export declare type ModelType<T = any> = Constructor<ModelBaseExtender<ModelBase>> & T;
 /** Format to build up a Model described by its columns descriptors [See @Column] */
 export declare class ModelFormat {
     name: string;
@@ -48,7 +48,7 @@ export declare abstract class ModelBase {
     /** ID Format shorthand, generates a static ID member with automatic increment [See ModelBase.Field] */
     static ID(Model: any): any;
     /** Check if a model can be validated */
-    protected static checkValidity<T extends ModelBase>(model: T, ...args: any[]): boolean;
+    protected static checkValidity(model: ModelBase, ...args: any[]): boolean;
     /** Get a Model by its name (exclude model from the name) */
     static getByName<T extends ModelBase = any>(name: string): T;
     /** Add a Model to the static collection */

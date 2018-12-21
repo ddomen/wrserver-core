@@ -1,7 +1,8 @@
 import { Connection, IConnectionIncomingParsed, IConnectionOutcome, Emitter, InterceptorCollection } from '../component'
 import { Service } from "../service";
-import { ModelBase, Model } from "../models";
+import { ModelBase, ModelType } from "../models";
 import { Event } from '../events';
+import { Module } from '../module';
 
 /** Controller interface for default method */
 export interface IControllerDefault{ default(message: IConnectionIncomingParsed): IConnectionOutcome }
@@ -19,8 +20,8 @@ export abstract class Controller {
     constructor(
         protected connection: Connection,
         protected events: Emitter,
-        protected services: { [name: string]: any },
-        protected models: { [name: string]: any },
+        protected services: { [name: string]: Service },
+        protected models: { [name: string]: ModelType },
         protected interceptors: InterceptorCollection
     ){}
 

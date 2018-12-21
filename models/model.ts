@@ -1,8 +1,7 @@
-import { Constructor, ClassOf } from '../wrserver';
-import { TLSSocket } from 'tls';
+import { Constructor } from '../wrserver';
 
 export type ModelBaseExtender<T extends ModelBase> = T;
-export type ModelType<T extends ModelBase = any> = ClassOf<T>;
+export type ModelType<T = any> = Constructor<ModelBaseExtender<ModelBase>> & T;
 
 /** Format to build up a Model described by its columns descriptors [See @Column] */
 export class ModelFormat{
@@ -107,7 +106,7 @@ export abstract class ModelBase {
     public static ID(Model: any){ Model.ID = Number(Model.ID)||1; return Model.Number('id', () => Model.ID++);}
 
     /** Check if a model can be validated */
-    protected static checkValidity<T extends ModelBase>(model: T, ...args: any[]): boolean{ return true; }
+    protected static checkValidity(model: ModelBase, ...args: any[]): boolean{ return true; }
 
     /** Get a Model by its name (exclude model from the name) */
     public static getByName<T extends ModelBase = any>(name: string): T{

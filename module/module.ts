@@ -1,7 +1,7 @@
 import { Controller, ControllerType } from '../controller';
 import { Connection, IConnectionIncomingParsed, IConnectionOutcome, Emitter, Interceptor, InterceptorCollection } from '../component';
 import { Service, ServiceType } from '../service';
-import { ModelBase } from '../models';
+import { ModelBase, ModelType } from '../models';
 import { Event } from '../events';
 
 /** Type of Module */
@@ -9,8 +9,8 @@ export type ModuleType = typeof Module;
 
 /** Module package for server service and models injection */
 export abstract class Module {
-    protected controllers: (typeof Controller)[] = [];
-    protected models: typeof ModelBase[] = [];
+    protected controllers: ControllerType[] = [];
+    protected models: ModelType[] = [];
     
     public services: ServiceType[] = [];
     public dependencies: ModuleType[] = [];
