@@ -15,7 +15,7 @@ export type Page = (message: IConnectionIncomingParsed) => IConnectionOutcome;
  * Every method linked to a page should return a 'ConnectionOutcome'
 */
 export abstract class Controller {
-
+    //TODO: PAGE decorator
     constructor(
         protected connection: Connection,
         protected events: Emitter,

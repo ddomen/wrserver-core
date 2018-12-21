@@ -62,12 +62,6 @@ export class Connection{
     protected onDrop(): this{
         this.events.emit<Event.Connection.Drop.Type>(Event.Connection.Drop.Name, this);
         this.interceptors.intercept(Event.Connection.Drop.Name, []);
-        // TODO: pass it to auth service
-        let auth = this.get('auth');
-        if(auth){
-            auth.disconnect();
-            this.events.emit('auth.disconnect', auth);
-        }
         return this;
     }
 
