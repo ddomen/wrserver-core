@@ -127,8 +127,6 @@ export abstract class ModelBase {
     protected static ArrayString = new ModelFormat(null, String, '');
     protected static ArrayDate = new ModelFormat(null, Date, () => new Date);
 
-    /** Represent the table name which can be saved on a file */
-    protected static Table: string;
     private static MODELS: { [key: string]: ModelBaseExtender<any> } = {};
 }
 
