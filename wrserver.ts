@@ -49,7 +49,7 @@ export class WRServer {
     protected wsserver: WS.server = new WS.server({ httpServer: this.server, autoAcceptConnections: false });
 
     protected events: Emitter = new Emitter();
-    protected console: Console = new Console('WRS');
+    protected console: Console;
     protected connections: Connection[] = [];
     protected services: Service[] = [];
     protected modules: Module[] = [];
@@ -64,6 +64,8 @@ export class WRServer {
         protected wsprotocol: string = 'wrs_prtc'
     ){
         if(!PATH.isAbsolute(this.directory)){ this.directory = PATH.join(process.cwd(), this.directory);  }
+
+        this.console = new Console('WRS', this.directory);
 
         let srv: typeof Service[] = [],
             mods: typeof Module[] = modules.slice()
@@ -119,7 +121,7 @@ export class WRServer {
 
                 if(!uniqueServices.some(x => !x.service)){ this.events.fire<Event.Service.AllReady.Type>(Event.Service.AllReady.Name); }
             }, x.type.name);
-            x.service = new (x.type as any)(this.events);
+            x.service = new (x.type as any)(this.directory, this.events);
             this.services.push(x.service);
             this.interceptors.inject(x.service);
         })

@@ -1,3 +1,4 @@
+import * as PATH from 'path';
 import { Emitter, InterceptorCollection, Interceptor } from "../component";
 import { Event } from "../events";
 
@@ -10,7 +11,10 @@ export abstract class Service {
     public interceptors: Interceptor[] = [];
     protected interceptorCollection: InterceptorCollection;
 
-    constructor(protected events: Emitter){ }
+    constructor(protected directory: string, protected events: Emitter){
+        let serv: ServiceType = this.constructor as ServiceType;
+        this.directory = PATH.isAbsolute(serv.directory) ? serv.directory : PATH.join(this.directory, serv.directory || '');
+    }
 
     /** Inject interceptors to the Service */
     public inject(interceptors: InterceptorCollection): this{
@@ -31,4 +35,6 @@ export abstract class Service {
         this.events.fire<Event.Service.Ready.Type>(Event.Service.Ready.Name, this, this.constructor.name);
         return this;
     }
+
+    protected static directory: string = '';
 }

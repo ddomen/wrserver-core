@@ -3,11 +3,12 @@ import { Emitter, InterceptorCollection, Interceptor } from "../component";
 export declare type ServiceType = typeof Service;
 /** Service Base class [your services should extend this class and have 'Service' at the end of the name] */
 export declare abstract class Service {
+    protected directory: string;
     protected events: Emitter;
     dependencies: ServiceType[];
     interceptors: Interceptor[];
     protected interceptorCollection: InterceptorCollection;
-    constructor(events: Emitter);
+    constructor(directory: string, events: Emitter);
     /** Inject interceptors to the Service */
     inject(interceptors: InterceptorCollection): this;
     /** Initilize the server, just after dependencies resolved.
@@ -18,4 +19,5 @@ export declare abstract class Service {
     init(...dep: Service[]): this;
     /** Fire the ready event for initialize the server */
     protected ready(): this;
+    protected static directory: string;
 }
