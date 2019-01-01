@@ -15,7 +15,7 @@ export class Column extends PropertyDecorator{
 
     public fieldId(Model: any, name: string){
         let constr: any = Model.constructor;
-        if(Array.isArray(constr.Columns)){ constr.Columns.push(constr.ID(constr)) }
+        if(Array.isArray(constr.Columns)){ constr.Columns.push(ModelBase.ID(constr)) }
     }
 
     public static decore(type: any, def: any, array?: any): any{ return this.Field(type, def, array); }
