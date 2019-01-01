@@ -2,20 +2,18 @@ import { Connection, IConnectionIncomingParsed, IConnectionOutcome, Emitter, Int
 import { Service } from "../service";
 import { ModelBase, ModelType } from "../models";
 import { Event } from '../events';
+import { Page } from './pages';
 
 /** Controller interface for default method */
 export interface IControllerDefault{ default(message: IConnectionIncomingParsed): IConnectionOutcome }
 /** Type of Controller */
 export type ControllerType = typeof Controller;
-/** Type of Page */
-export type Page = (message: IConnectionIncomingParsed) => IConnectionOutcome;
 
 /** Controller Base class [your controllers should extends this class and have 'Controller' at the end of the name]
 
  * Every method linked to a page should return a 'ConnectionOutcome'
 */
 export abstract class Controller {
-    //TODO: PAGE decorator
     constructor(
         protected connection: Connection,
         protected events: Emitter,
@@ -33,7 +31,7 @@ export abstract class Controller {
 
         this.events.emit<Event.Controller.Digest.Type>(Event.Controller.Digest.Name, page);
         if(page){
-            return this.interceptors.intercept(this.constructor.name.toLowerCase() + '.' + pageStr, [ message ],
+            return this.interceptors.intercept(this.constructor.name.toLowerCase() + '.' + pageStr, [ this.connection, message, this ],
                 { type: 'function', callback: (int: Function) => int.call(this, page) },
                 { type: 'null', callback: () => this.callPage(page, message) },
                 { type: 'false', callback: null },
@@ -43,8 +41,8 @@ export abstract class Controller {
         return Controller.NotDig;
     }
 
-    protected callPage(page: Function, message: IConnectionIncomingParsed): IConnectionOutcome{
-        if(page){ return page.call(this, message); }
+    protected callPage(page: Page, message: IConnectionIncomingParsed): IConnectionOutcome{
+        if(page && page.isPage){ return page.call(this, message); }
         return null;
     }
 

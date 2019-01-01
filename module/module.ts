@@ -37,7 +37,7 @@ export abstract class Module {
     public digest(connection: Connection, message: IConnectionIncomingParsed): IConnectionOutcome {
         let cnt = this.controllers.find(c => c.section == message.section);
         if(cnt){
-            return this._interceptors.intercept(cnt, [ connection, message ],
+            return this._interceptors.intercept(cnt, [ connection, message, this ],
                 { type: 'function', callback: (int: Function) => int.call(this) },
                 { type: 'false', callback: null },
                 { type: 'any', callback: () => this.makeController(connection, message, cnt) }

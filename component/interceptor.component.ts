@@ -66,13 +66,13 @@ export namespace Interceptor{
     }
     /** Interceptor for Controllers (before controller message digestion) */
     export abstract class Controller extends Interceptor<ControllerType> {
-        public abstract intercept(type: ControllerType, connection: ConnectionComponent, message: IConnectionIncomingParsed): null | IConnectionOutcome | Function | Symbol;
+        public abstract intercept(type: ControllerType, connection: ConnectionComponent, message: IConnectionIncomingParsed, module: Module): null | IConnectionOutcome | Function | Symbol;
         /** Attach the Interceptor to a Controller */
         public static attach(type: ControllerType): Controller{ return super.attachTo<ControllerType>(type) as Controller; }
     }
     /** Interceptor for Controller Pages (before page message digestion) */
     export abstract class Page extends Interceptor<string> {
-        public abstract intercept(type: string, message: IConnectionIncomingParsed): null | undefined | any;
+        public abstract intercept(type: string, connection: ConnectionComponent, message: IConnectionIncomingParsed, controller: ControllerBase): null | undefined | any;
         /** Attach the Interceptor to a Page (by string name: <controllerName>.<pageName>) */
         public static attach(type: string): Page{ return super.attachTo<string>(type); }
     }

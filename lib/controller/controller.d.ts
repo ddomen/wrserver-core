@@ -1,14 +1,13 @@
 import { Connection, IConnectionIncomingParsed, IConnectionOutcome, Emitter, InterceptorCollection } from '../component';
 import { Service } from "../service";
 import { ModelBase, ModelType } from "../models";
+import { Page } from './pages';
 /** Controller interface for default method */
 export interface IControllerDefault {
     default(message: IConnectionIncomingParsed): IConnectionOutcome;
 }
 /** Type of Controller */
 export declare type ControllerType = typeof Controller;
-/** Type of Page */
-export declare type Page = (message: IConnectionIncomingParsed) => IConnectionOutcome;
 /** Controller Base class [your controllers should extends this class and have 'Controller' at the end of the name]
 
  * Every method linked to a page should return a 'ConnectionOutcome'
@@ -30,7 +29,7 @@ export declare abstract class Controller {
     }, interceptors: InterceptorCollection<string>);
     /** Digest a parsed message in an readable response */
     digest(message: IConnectionIncomingParsed): IConnectionOutcome;
-    protected callPage(page: Function, message: IConnectionIncomingParsed): IConnectionOutcome;
+    protected callPage(page: Page, message: IConnectionIncomingParsed): IConnectionOutcome;
     /** Return a readable ok response, with class, and data converted to sendable (if method is present) */
     protected ok(cls: string, data: any, sendableArgs?: any[]): IConnectionOutcome;
     /** Return a readable bad response, reporting message with specific code */

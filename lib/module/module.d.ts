@@ -17,7 +17,7 @@ export declare abstract class Module {
     private _models;
     private _interceptors;
     constructor(events: Emitter);
-    /** Inject service and calculate models to use in this module */
+    /** Inject service and calculate models and interceptors to use in this module */
     inject(services: Service[]): this;
     /** Digest a parsed message, finding the correct Controller */
     digest(connection: Connection, message: IConnectionIncomingParsed): IConnectionOutcome;
