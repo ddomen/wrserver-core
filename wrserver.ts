@@ -92,7 +92,7 @@ export class WRServer {
         if(modules.length){
             modules.forEach(mod => {
                 if(!this.modules.find(m => m.constructor == mod)){
-                    let nmod: Module = new (mod as any)(this.events);
+                    let nmod: Module = new (mod as any)(this.events, new Console(mod.name, this.directory));
                     this.modules.push(nmod);
                     services.push(...nmod.services);
                     this.codes.push(...nmod.codes.filter(code => !this.codes.includes(code)));
@@ -121,9 +121,10 @@ export class WRServer {
 
                 if(!uniqueServices.some(x => !x.service)){ this.events.fire<Event.Service.AllReady.Type>(Event.Service.AllReady.Name); }
             }, x.type.name);
-            x.service = new (x.type as any)(this.directory, this.events);
+            x.service = new (x.type as any)(this.directory, this.events, new Console(x.type.name, this.directory));
             this.services.push(x.service);
             this.interceptors.inject(x.service);
+            if(!x.service.dependencies.length){ x.service.init(); }
         })
         return this;
     }
