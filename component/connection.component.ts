@@ -10,8 +10,10 @@ import { InterceptorCollection } from './interceptor.component';
 /** Incoming not parsed message (raw utf8 - buffered) */
 export interface IConnectionIncomingMessage { type: 'utf8' | 'binary', utf8Data: string }
 /** Incoming parsed message */
-export interface IConnectionIncomingParsed { target: string, section: string, page: string, option: string, id: number, data: any }
+export interface IConnectionIncomingParsed<T = any> { target: string, section: string, page: string, option: string, id: number, data: T }
 /** Outcoming structured ok message */
+export type IConnectionIncomingParsedNull = IConnectionIncomingParsed<null>;
+/** Incoming parsed null data message */
 export interface IConnectionOutcomeMessage{ class: string, data: any, id?: number }
 /** Outcoming structured bad message */
 export interface IConnectionOutcomeBadMessage { code: string, message: string, bad: boolean }
@@ -43,7 +45,7 @@ export class Connection{
         this.onRise();
         this.socket.on('error', (err: Error) => this.onError(err));
         this.socket.on('close', (code: number, reason: string) => this.onClose(code, reason));
-        this.socket.on('message', ((message: IConnectionIncomingMessage) => this.onMessage(message)) as any);
+        this.socket.on('message', (message: WS.IMessage) => this.onMessage(message as IConnectionIncomingMessage));
 
         return this;
     }
@@ -118,10 +120,9 @@ export class Connection{
         if(mod){
             this.events.emit<Event.Connection.Digest.Type>(Event.Connection.Digest.Name, mod);
             this.interceptors.intercept(mod.constructor, [ message ],
-                { type: 'function', callback: (int: Function)=>{ int.call(this); } },
-                { type: 'false', callback: null },
-                { type: 'null', callback: () => { this.digest(mod, message); } },
-                { type: 'any', callback: ()=>{ this.digest(mod, message); } }
+                { type: 'function', callback: (int: Function) => int.call(this) },
+                { type: 'false', callback: () => null },
+                { type: 'any', callback: () => this.digest(mod, message) }
             );
         }
         else{ return this.bad('bad target'); }

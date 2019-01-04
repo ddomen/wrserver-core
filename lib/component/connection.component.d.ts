@@ -8,15 +8,17 @@ export interface IConnectionIncomingMessage {
     utf8Data: string;
 }
 /** Incoming parsed message */
-export interface IConnectionIncomingParsed {
+export interface IConnectionIncomingParsed<T = any> {
     target: string;
     section: string;
     page: string;
     option: string;
     id: number;
-    data: any;
+    data: T;
 }
 /** Outcoming structured ok message */
+export declare type IConnectionIncomingParsedNull = IConnectionIncomingParsed<null>;
+/** Incoming parsed null data message */
 export interface IConnectionOutcomeMessage {
     class: string;
     data: any;
