@@ -1,4 +1,4 @@
-import { Connection, IConnectionIncomingParsed, IConnectionOutcome, Emitter, InterceptorCollection } from '../component';
+import { Connection, IConnectionIncomingParsed, IConnectionOutcome, Emitter, InterceptorCollection, Console } from '../component';
 import { Service } from "../service";
 import { ModelBase, ModelType } from "../models";
 import { Page } from './pages';
@@ -15,6 +15,7 @@ export declare type ControllerType = typeof Controller;
 export declare abstract class Controller {
     protected connection: Connection;
     protected events: Emitter;
+    protected console: Console;
     protected services: {
         [name: string]: Service;
     };
@@ -22,7 +23,7 @@ export declare abstract class Controller {
         [name: string]: ModelType;
     };
     protected interceptors: InterceptorCollection<string>;
-    constructor(connection: Connection, events: Emitter, services: {
+    constructor(connection: Connection, events: Emitter, console: Console, services: {
         [name: string]: Service;
     }, models: {
         [name: string]: ModelType;

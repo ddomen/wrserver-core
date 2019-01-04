@@ -1,4 +1,4 @@
-import { Connection, IConnectionIncomingParsed, IConnectionOutcome, Emitter, InterceptorCollection, Interceptor } from '../component'
+import { Connection, IConnectionIncomingParsed, IConnectionOutcome, Emitter, InterceptorCollection, Console } from '../component'
 import { Service } from "../service";
 import { ModelBase, ModelType } from "../models";
 import { Event } from '../events';
@@ -17,6 +17,7 @@ export abstract class Controller {
     constructor(
         protected connection: Connection,
         protected events: Emitter,
+        protected console: Console,
         protected services: { [name: string]: Service },
         protected models: { [name: string]: ModelType },
         protected interceptors: InterceptorCollection<string>

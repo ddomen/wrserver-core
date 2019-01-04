@@ -1,5 +1,5 @@
 import { Controller, ControllerType } from '../controller';
-import { Connection, IConnectionIncomingParsed, IConnectionOutcome, Emitter, Interceptor, InterceptorCollection } from '../component';
+import { Connection, IConnectionIncomingParsed, IConnectionOutcome, Emitter, Interceptor, InterceptorCollection, Console } from '../component';
 import { Service, ServiceType } from '../service';
 import { ModelBase, ModelType } from '../models';
 import { Event } from '../events';
@@ -21,7 +21,7 @@ export abstract class Module {
     private _models: { [name: string]: typeof ModelBase };
     private _interceptors: InterceptorCollection<ControllerType>;
 
-    constructor(protected events: Emitter){ }
+    constructor(protected events: Emitter, protected console: Console){ }
 
     /** Inject service and calculate models and interceptors to use in this module */
     public inject(services: Service[]){
@@ -48,7 +48,7 @@ export abstract class Module {
 
     protected makeController(connection: Connection, message: IConnectionIncomingParsed, cnt: ControllerType): IConnectionOutcome{
         if(cnt){
-            let cm: Controller = new (cnt as any)(connection, this.events, this._services, this._models, this._interceptors.get<Interceptor.Controller>(Interceptor.Controller));
+            let cm: Controller = new (cnt as any)(connection, this.events, this.console, this._services, this._models, this._interceptors.get<Interceptor.Controller>(Interceptor.Controller));
             this.events.emit<Event.Module.Digest.Type>(Event.Module.Digest.Name, cm);
             return cm.digest(message);
         }

@@ -1,5 +1,5 @@
 import * as PATH from 'path';
-import { Emitter, InterceptorCollection, Interceptor } from "../component";
+import { Emitter, InterceptorCollection, Interceptor, Console } from "../component";
 import { Event } from "../events";
 
 /** Type of Service */
@@ -11,7 +11,7 @@ export abstract class Service {
     public interceptors: Interceptor[] = [];
     protected interceptorCollection: InterceptorCollection;
 
-    constructor(protected directory: string, protected events: Emitter){
+    constructor(protected directory: string, protected events: Emitter, protected console: Console){
         let serv: ServiceType = this.constructor as ServiceType;
         this.directory = PATH.isAbsolute(serv.directory) ? serv.directory : PATH.join(this.directory, serv.directory || '');
     }
@@ -32,6 +32,7 @@ export abstract class Service {
 
     /** Fire the ready event for initialize the server */
     protected ready(): this{
+        this.console.service('service ' + this.constructor.name + ' ready');
         this.events.fire<Event.Service.Ready.Type>(Event.Service.Ready.Name, this, this.constructor.name);
         return this;
     }

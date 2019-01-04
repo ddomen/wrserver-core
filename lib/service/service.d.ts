@@ -1,14 +1,15 @@
-import { Emitter, InterceptorCollection, Interceptor } from "../component";
+import { Emitter, InterceptorCollection, Interceptor, Console } from "../component";
 /** Type of Service */
 export declare type ServiceType = typeof Service;
 /** Service Base class [your services should extend this class and have 'Service' at the end of the name] */
 export declare abstract class Service {
     protected directory: string;
     protected events: Emitter;
+    protected console: Console;
     dependencies: ServiceType[];
     interceptors: Interceptor[];
     protected interceptorCollection: InterceptorCollection;
-    constructor(directory: string, events: Emitter);
+    constructor(directory: string, events: Emitter, console: Console);
     /** Inject interceptors to the Service */
     inject(interceptors: InterceptorCollection): this;
     /** Initilize the server, just after dependencies resolved.
