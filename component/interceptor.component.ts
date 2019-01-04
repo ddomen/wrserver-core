@@ -114,11 +114,15 @@ export class InterceptorCollection<T = any> {
                     !called.includes(cb) && (
                     (cb.type == 'null' && int == null)
                     || cb.type == typeof int
-                    || (cb.type == 'false' && !int)
+                    || (cb.type == 'false' && !int && int != null)
                     || (cb.type == 'true' && !!int)
                     )
                 );
-            if(intCall){ try{ resCall = intCall.callback.call(null, int); } catch(e){ resCall = Interceptor.NEXT; } }
+            called.push(intCall);
+            if(intCall && typeof intCall.callback == 'function'){
+                try{ resCall = intCall.callback.call(null, int); }
+                catch(e){ resCall = Interceptor.NEXT; }
+            }
             else{ break; }
         }
         if(!intCall){
